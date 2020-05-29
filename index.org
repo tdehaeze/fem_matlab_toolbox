@@ -676,10 +676,10 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
   % Inputs:
   %    - filename - relative or absolute path of the file that contains the eigenvectors and eigenvalues
   %    - args - Optional parameters:
-  %        - 'dirs' - [6 x 1] - ones(6,1) (default)
-  %                           - Vectors with 0 and 1 identifying directions to include in the modal matrix
-  %                           - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
-  %        - 'soft' - 'ansys' (default) - Software used for the FEM
+  %        - dirs - [6 x 1] - ones(6,1) (default)
+  %                          - Vectors with 0 and 1 identifying directions to include in the modal matrix
+  %                          - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
+  %        - soft - 'ansys' (default) - Software used for the FEM
   %
   % Outputs:
   %    - w  - [m x 1] - Eigenvalues [Hz]
@@ -701,6 +701,9 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
 #+end_src
 
 *** Open the file
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
 #+begin_src matlab
   fid = fopen(filename,'rt');
 
@@ -713,7 +716,6 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
 :PROPERTIES:
 :UNNUMBERED: t
 :END:
-
 #+begin_src matlab
   if strcmp(args.soft, 'ansys')
       w = [];
@@ -764,4 +766,260 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
 :END:
 #+begin_src matlab
   fclose(fid);
+#+end_src
+
+** =normalizeEigs=: Normalize Eigen Vectors
+:PROPERTIES:
+:header-args:matlab+: :tangle src/normalizeEigs.m
+:END:
+<<sec:normalizeEigs>>
+
+This Matlab function is accessible [[file:src/normalizeEigs.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  function [zn] = normalizeEigs(zm, args)
+  % normalizeEigs - Normalize the eigenvectors
+  %
+  % Syntax: [zn] = normalizeEigs(zm, args)
+  %
+  % Inputs:
+  %    - zm - Modal Matrix
+  %    - args - Optional parameters:
+  %        - method - 'mass' (default), 'unity' - Method used to normalize the eigenvectors
+  %
+  % Outputs:
+  %    - zn - Normalized Modal Matrix
+#+end_src
+
+*** Optional Parameters
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+      zm
+      args.m      double {mustBeNumeric} = 0
+      args.method char   {mustBeMember(args.method,{'mass', 'unity'})} = 'mass'
+  end
+#+end_src
+
+*** Normalize the Eigen Vectors - Mass Method
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+#+begin_src matlab
+  if strcmp(args.method, 'mass')
+      if size(args.m) ~= [size(zm,1), size(zm,1)]
+          error('The provided Mass matrix has not a compatible size with the Modal Matrix')
+      end
+   
+      zn = zeros(size(zm));
+      for i = 1:size(zm,2)
+          zn(:,i) = zm(:,i)/sqrt(zm(:,i)'*args.m*zm(:,i));
+      end
+  end
+#+end_src
+
+*** Normalize the Eigen Vectors - Unity Method
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+#+begin_src matlab
+  if strcmp(args.method, 'unity')
+    zn = zm./max(zm);
+  end
+#+end_src
+** =reductionInOut=: Reduce the Modal matrix to some nodes
+:PROPERTIES:
+:header-args:matlab+: :tangle src/reductionInOut.m
+:END:
+<<sec:reductionInOut>>
+
+This Matlab function is accessible [[file:src/reductionInOut.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+function [zr] = reductionInOut(zn, i_inputs, i_outputs)
+% reductionInOut - Reduce the Modal Matrix to only specified nodes corresponding to Inputs and Ouputs
+%
+% Syntax: [zr] = reductionInOut(zn, i_inputs, i_outputs)
+%
+% Inputs:
+%    - zn        - Normalized Modal Matrix
+%    - i_inputs  - Node indices corresponding to inputs
+%    - i_outputs - Node indices corresponding to inputs
+%
+% Outputs:
+%    - zr - Reduced Normalized Modal Matrix
+#+end_src
+
+*** Arguments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+      zn
+      i_inputs  {mustBeInteger} = 0
+      i_outputs {mustBeInteger} = 0
+  end
+#+end_src
+
+*** Size Reduction
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  zr = zn([i_inputs, i_outputs], :);
+#+end_src
+** TODO =computeModalDamping= - Compute the Damping
+:PROPERTIES:
+:header-args:matlab+: :tangle src/computeModalDaping.m
+:END:
+<<sec:computeModalDaping>>
+
+This Matlab function is accessible [[file:src/computeModalDaping.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  function [xi] = computeModalDaping(z, w, args)
+  % computeModalDaping -
+  %
+  % Syntax: [xi] = computeModalDaping(z, w, args)
+  %
+  % Inputs:
+  %    - z, w, args -
+  %
+  % Outputs:
+  %    - xi -
+#+end_src
+
+*** Arguments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+  end
+#+end_src
+
+
+** TODO =sortModes= - Sort Modes
+:PROPERTIES:
+:header-args:matlab+: :tangle src/sortModes.m
+:END:
+<<sec:sortModes>>
+
+This Matlab function is accessible [[file:src/sortModes.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+function [modes_i] = sortModes(z, w, xi, args)
+% sortModes -
+%
+% Syntax: [modes_i] = sortModes(z, w, xi, args)
+%
+% Inputs:
+%    - z, w, xi, args -
+%
+% Outputs:
+%    - modes_i -
+
+end
+#+end_src
+
+*** Arguments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+  end
+#+end_src
+
+
+** TODO =reduceModes= - Get Modes numbers for the reduced model
+:PROPERTIES:
+:header-args:matlab+: :tangle src/reduceModes.m
+:header-args:matlab+: :comments none :mkdirp yes :eval no
+:END:
+<<sec:reduceModes>>
+
+This Matlab function is accessible [[file:src/reduceModes.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+function [modes_i] = reduceModes(z, w, xi, args)
+% reduceModes -
+%
+% Syntax: [modes_i] = reduceModes(z, w, xi, args)
+%
+% Inputs:
+%    - z, w, xi, args -
+%
+% Outputs:
+%    - modes_i -
+#+end_src
+
+*** Arguments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+  end
+#+end_src
+
+
+** TODO =createStateSpaceModel= - Create the Reduced State Space Model
+:PROPERTIES:
+:header-args:matlab+: :tangle src/createStateSpaceModel.m
+:header-args:matlab+: :comments none :mkdirp yes :eval no
+:END:
+<<sec:createStateSpaceModel>>
+
+This Matlab function is accessible [[file:src/createStateSpaceModel.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+function [G] = createStateSpaceModel(z, w, xi, modes_i)
+% createStateSpaceModel -
+%
+% Syntax: [G] = createStateSpaceModel(z, w, xi, modes_i)
+%
+% Inputs:
+%    - z, w, xi, modes_i -
+%
+% Outputs:
+%    - G -
+#+end_src
+
+*** Arguments
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+  end
 #+end_src
