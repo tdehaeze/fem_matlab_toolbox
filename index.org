@@ -1,0 +1,767 @@
+#+TITLE: Finite Element Model - Matlab Toolbox
+:DRAWER:
+#+STARTUP: overview
+
+#+LANGUAGE: en
+#+EMAIL: dehaeze.thomas@gmail.com
+#+AUTHOR: Dehaeze Thomas
+
+#+HTML_LINK_HOME: ./index.html
+#+HTML_LINK_UP: ./index.html
+
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./css/readtheorg.css"/>
+#+HTML_HEAD: <script src="./js/jquery.min.js"></script>
+#+HTML_HEAD: <script src="./js/bootstrap.min.js"></script>
+#+HTML_HEAD: <script src="./js/jquery.stickytableheaders.min.js"></script>
+#+HTML_HEAD: <script src="./js/readtheorg.js"></script>
+
+#+PROPERTY: header-args:matlab  :session *MATLAB*
+#+PROPERTY: header-args:matlab+ :comments org
+#+PROPERTY: header-args:matlab+ :results none
+#+PROPERTY: header-args:matlab+ :exports both
+#+PROPERTY: header-args:matlab+ :eval no-export
+#+PROPERTY: header-args:matlab+ :output-dir figs
+#+PROPERTY: header-args:matlab+ :tangle no
+#+PROPERTY: header-args:matlab+ :mkdirp yes
+
+#+PROPERTY: header-args:shell  :eval no-export
+
+#+PROPERTY: header-args:latex  :headers '("\\usepackage{tikz}" "\\usepackage{import}" "\\import{$HOME/Cloud/tikz/org/}{config.tex}")
+#+PROPERTY: header-args:latex+ :imagemagick t :fit yes
+#+PROPERTY: header-args:latex+ :iminoptions -scale 100% -density 150
+#+PROPERTY: header-args:latex+ :imoutoptions -quality 100
+#+PROPERTY: header-args:latex+ :results raw replace :buffer no
+#+PROPERTY: header-args:latex+ :eval no-export
+#+PROPERTY: header-args:latex+ :exports results
+#+PROPERTY: header-args:latex+ :mkdirp yes
+#+PROPERTY: header-args:latex+ :output-dir figs
+:END:
+
+* Matlab with ANSYS
+** Matlab Init                                              :noexport:ignore:
+#+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
+  <<matlab-dir>>
+#+end_src
+
+#+begin_src matlab :exports none :results silent :noweb yes
+  <<matlab-init>>
+#+end_src
+
+#+begin_src matlab
+  addpath('./src/');
+#+end_src
+
+** Extract values
+#+begin_src matlab
+  [w, zm] = extractEigs('cantbeam30bl.eig', 'dirs', [1 0 0 0 0 0]');
+  % % dir = 3; % UY
+  % [xn, f0] = readEigFile(filename, dir);
+
+  % n_nodes = size(xn, 1);
+  % n_modes = size(xn, 2);
+#+end_src
+
+** Define Physical Inputs and Outputs
+First, define the node numbers corresponding to the inputs and outputs
+#+begin_src matlab
+  i_input = 14;
+  i_output = 29;
+#+end_src
+
+** Define Damping
+We here use uniform damping.
+#+begin_src matlab
+  xi = 0.01;
+#+end_src
+
+** TODO Alternative Definition of the matrix A
+I could define 2x2 sub-matrices each corresponding to a particular mode and then combine them using =blkdiag= command.
+
+** All Modes Included in the Model
+System Matrix - A
+#+begin_src matlab
+  Adiag = zeros(2*n_modes,1);
+  Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+  Adiagsup = zeros(2*n_modes-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*n_modes-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*n_modes, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*n_modes);
+  C(:, 1:2:end) = xn(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_f = ss(A, B, C, D);
+#+end_src
+
+** Simple mode truncation
+Let's plot the frequency of the modes (Figure [[fig:hatch00_cant_beam_modes_freq]]).
+
+#+begin_src matlab :exports none
+  figure;
+  plot(1:n_modes, f0, 'ko-');
+  xlabel('Mode Number'); ylabel('Frequency [Hz]');
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/hatch00_cant_beam_modes_freq.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:hatch00_cant_beam_modes_freq
+#+caption: Frequency of the modes
+#+RESULTS:
+[[file:figs/hatch00_cant_beam_modes_freq.png]]
+
+#+begin_src matlab :exports none
+  dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
+
+  figure;
+  plot(1:n_modes, dc_gain, 'ko-');
+  xlabel('Sorted Modes'); ylabel('DC Values');
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/hatch00_cant_beam_unsorted_dc_gains.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:hatch00_cant_beam_unsorted_dc_gains
+#+caption: Unsorted DC Gains
+#+RESULTS:
+[[file:figs/hatch00_cant_beam_unsorted_dc_gains.png]]
+
+Let's keep only the first 10 modes.
+#+begin_src matlab
+  m_max = 10;
+  xn_t = xn(:, 1:m_max);
+  f0_t = f0(1:m_max);
+#+end_src
+
+#+begin_src matlab
+  Adiag = zeros(2*m_max,1);
+  Adiag(2:2:end) = -2*xi.*(2*pi*f0_t);
+
+  Adiagsup = zeros(2*m_max-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*m_max-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0_t).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*m_max, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn_t'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*m_max);
+  C(:, 1:2:end) = xn_t(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_t = ss(A, B, C, D);
+#+end_src
+
+** Modes sorted by their DC gain
+Let's sort the modes by their DC gains and plot their sorted DC gains.
+
+#+begin_src matlab
+  dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
+
+  [dc_gain_sort, index_sort] = sort(dc_gain, 'descend');
+#+end_src
+
+#+begin_src matlab :exports none
+  figure;
+  plot(1:n_modes, dc_gain_sort, 'ko-');
+  xlabel('Sorted Modes'); ylabel('DC Values');
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/hatch00_cant_beam_sorted_dc_gains.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:hatch00_cant_beam_sorted_dc_gains
+#+caption: Sorted DC Gains
+#+RESULTS:
+[[file:figs/hatch00_cant_beam_sorted_dc_gains.png]]
+
+Let's keep only the first 10 *sorted* modes.
+#+begin_src matlab
+  m_max = 10;
+
+  xn_s = xn(:, index_sort(1:m_max));
+  f0_s = f0(index_sort(1:m_max));
+#+end_src
+
+#+begin_src matlab
+  Adiag = zeros(2*m_max,1);
+  Adiag(2:2:end) = -2*xi.*(2*pi*f0_s);
+
+  Adiagsup = zeros(2*m_max-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*m_max-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0_s).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*m_max, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn_s'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*m_max);
+  C(:, 1:2:end) = xn_s(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_s = ss(A, B, C, D);
+#+end_src
+
+
+** Comparison
+#+begin_src matlab
+  freqs = logspace(0, 5, 1000);
+
+  figure;
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Full');
+  plot(freqs, abs(squeeze(freqresp(G_t, freqs, 'Hz'))), 'DisplayName', 'Trun');
+  plot(freqs, abs(squeeze(freqresp(G_s, freqs, 'Hz'))), 'DisplayName', 'Sort');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('Frequency [Hz]');
+  legend();
+#+end_src
+
+** Effect of the Individual Modes
+#+begin_src matlab
+  freqs = logspace(0, 4, 1000);
+
+  figure;
+  hold on;
+  for mode_i = 1:6
+      A = zeros(2);
+      A(2,2) = -2*xi.*(2*pi*f0(mode_i));
+      A(1,2) = 1;
+      A(2,1) = -(2*pi*f0(mode_i)).^2;
+
+      B = [0; xn(i_input, mode_i)'];
+
+      C = [xn(i_output, mode_i), 0];
+
+      D = zeros(length(i_output), length(i_input));
+
+      plot(freqs, abs(squeeze(freqresp(ss(A,B,C,D), freqs, 'Hz'))), ...
+           'DisplayName', sprintf('Mode %i', mode_i));
+  end
+  plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'k--', ...
+       'DisplayName', 'Full');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('Frequency [Hz]');
+  legend();
+#+end_src
+
+
+** Non-Uniform Damping
+*** Definition of the Damping
+If we want to use Rayleigh damping:
+#+begin_src matlab
+  a = 1e-2;
+  b = 1e-6;
+  xi = (a + b * (2*pi*f0).^2)./(2*pi*f0);
+#+end_src
+
+*** System Creation
+System Matrix - A
+#+begin_src matlab
+  Adiag = zeros(2*n_modes,1);
+  Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+  Adiagsup = zeros(2*n_modes-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*n_modes-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*n_modes, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*n_modes);
+  C(:, 1:2:end) = xn(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_d = ss(A, B, C, D);
+#+end_src
+
+*** Comparison with Uniform Damping
+#+begin_src matlab
+  freqs = logspace(0, 5, 1000);
+
+  figure;
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Uniform Damping');
+  plot(freqs, abs(squeeze(freqresp(G_d, freqs, 'Hz'))), 'DisplayName', 'Non-Uniform Damping');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('Frequency [Hz]');
+  legend();
+#+end_src
+
+*** Modes sorted by their peak gain
+Let's sort the modes by their peak gains and plot their sorted peak gains.
+
+#+begin_src matlab
+  dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
+  peak_gain = dc_gain./xi;
+
+  [peak_gain_sort, index_sort] = sort(peak_gain, 'descend');
+#+end_src
+
+#+begin_src matlab :exports none
+  figure;
+  plot(1:n_modes, peak_gain_sort, 'ko-');
+  xlabel('Sorted Modes'); ylabel('Peak Values');
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+#+end_src
+
+Let's keep only the first 10 *sorted* modes.
+#+begin_src matlab
+  m_max = 10;
+
+  xn_s = xn(:, index_sort(1:m_max));
+  f0_s = f0(index_sort(1:m_max));
+  xi_x = xi(index_sort(1:m_max));
+#+end_src
+
+#+begin_src matlab
+  Adiag = zeros(2*m_max,1);
+  Adiag(2:2:end) = -2*xi_s.*(2*pi*f0_s);
+
+  Adiagsup = zeros(2*m_max-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*m_max-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0_s).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*m_max, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn_s'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*m_max);
+  C(:, 1:2:end) = xn_s(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_p = ss(A, B, C, D);
+#+end_src
+
+#+begin_src matlab
+  freqs = logspace(0, 5, 1000);
+
+  figure;
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Uniform Damping');
+  plot(freqs, abs(squeeze(freqresp(G_d, freqs, 'Hz'))), 'DisplayName', 'Non-Uniform Damping');
+  plot(freqs, abs(squeeze(freqresp(G_p, freqs, 'Hz'))), 'DisplayName', 'Peak sort');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('Frequency [Hz]');
+  legend();
+#+end_src
+** MIMO System
+*** Inputs and Outputs
+Let's choose two inputs and two outputs.
+#+begin_src matlab
+  i_input = [14, 31];
+  i_output = [14, 31];
+#+end_src
+
+*** System Matrices
+System Matrix - A
+#+begin_src matlab
+  Adiag = zeros(2*n_modes,1);
+  Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+  Adiagsup = zeros(2*n_modes-1,1);
+  Adiagsup(1:2:end) = 1;
+
+  Adiaginf = zeros(2*n_modes-1,1);
+  Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+  A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+#+end_src
+
+System Matrix - B
+#+begin_src matlab
+  B = zeros(2*n_modes, length(i_input));
+
+  for i = 1:length(i_input)
+      % Physical Coordinates
+      Fp = zeros(n_nodes, 1);
+      Fp(i_input(i)) = 1;
+
+      B(2:2:end, i) = xn'*Fp;
+  end
+#+end_src
+
+System Matrix - C
+#+begin_src matlab
+  C = zeros(length(i_output), 2*n_modes);
+  C(:, 1:2:end) = xn(i_output, :);
+#+end_src
+
+System Matrix - D
+#+begin_src matlab
+  D = zeros(length(i_output), length(i_input));
+#+end_src
+
+State Space Model
+#+begin_src matlab
+  G_m = ss(A, B, C, D);
+#+end_src
+
+*** Balancing Reduction
+First, we have to make sure that the rigid body mode is not included in the system (here it is not).
+
+Then, we compute the controllability and observability gramians.
+#+begin_src matlab
+  wc = gram(G_m, 'c');
+  wo = gram(G_m, 'o');
+#+end_src
+
+And we plot the diagonal terms
+#+begin_src matlab :exports none
+  figure;
+  hold on;
+  plot(1:size(A,1), diag(wc), 'x', ...
+       'DisplayName', '$w_c$');
+  plot(1:size(A,1), diag(wo), 'o', ...
+       'DisplayName', '$w_o$');
+  hold off;
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('States');
+  legend();
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/hatch00_gramians.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:hatch00_gramians
+#+caption: Observability and Controllability Gramians
+#+RESULTS:
+[[file:figs/hatch00_gramians.png]]
+
+#+begin_src matlab :exports none
+  figure;
+
+  subplot(1,2,1);
+  title('Observability Gramians')
+  hold on;
+  plot(1:2:size(A,1), diag(wo(1:2:end, 1:2:end)), 'x', ...
+       'DisplayName', 'pos');
+  plot(2:2:size(A,1), diag(wo(2:2:end, 2:2:end)), 'o', ...
+       'DisplayName', 'vel');
+  hold off;
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('States');
+  legend();
+
+  subplot(1,2,2);
+  title('Controllability Gramians')
+  hold on;
+  plot(1:2:size(A,1), diag(wc(1:2:end, 1:2:end)), 'x', ...
+       'DisplayName', 'pos');
+  plot(2:2:size(A,1), diag(wc(2:2:end, 2:2:end)), 'o', ...
+       'DisplayName', 'vel');
+  hold off;
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('States');
+  legend();
+#+end_src
+
+We use =balreal= to rank oscillatory states.
+#+begin_quote
+    [SYSB,G] = BALREAL(SYS) computes a balanced state-space realization for
+    the stable portion of the linear system SYS. For stable systems, SYSB
+    is an equivalent realization for which the controllability and
+    observability Gramians are equal and diagonal, their diagonal entries
+    forming the vector G of Hankel singular values. Small entries in G
+    indicate states that can be removed to simplify the model (use MODRED
+    to reduce the model order).
+#+end_quote
+
+#+begin_src matlab
+  [G_b, G, T, Ti] = balreal(G_m);
+#+end_src
+
+#+begin_src matlab :exports none
+  figure;
+  hold on;
+  plot(G, 'k.-');
+  hold off;
+  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
+  ylabel('Diagonal of balanced gramian'); xlabel('State Number');
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/hatch00_cant_beam_gramian_balanced.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:hatch00_cant_beam_gramian_balanced
+#+caption: Sorted values of the Gramian of the balanced realization
+#+RESULTS:
+[[file:figs/hatch00_cant_beam_gramian_balanced.png]]
+
+Now we can choose the number of states to keep.
+#+begin_src matlab
+  n_states_b = 20;
+#+end_src
+
+We now use =modred= to define reduced order oscillatory system using =mathdc= or =truncate= option.
+#+begin_quote
+ MODRED  Model simplification by state elimination.
+
+    RSYS = MODRED(SYS,ELIM) simplifies the state-space model SYS by
+    discarding the states specified in the vector ELIM. The full state
+    vector X is partitioned as X = [X1;X2] where Xr=X1 is the reduced
+    state vector and X2 is discarded.
+#+end_quote
+
+#+begin_src matlab
+  G_br = modred(G_b, n_states_b+1:size(A,1), 'truncate');
+#+end_src
+
+If needed, the rigid body mode should be added to the reduced system.
+
+And other option is to specify the minimum value of the gramians diagonal elements for the modes to keep.
+#+begin_src matlab
+  G_min = 1e-4;
+  G_br = modred(G_b, G<G_min, 'truncate');
+#+end_src
+
+#+begin_src matlab
+  figure;
+  bodemag(G_br, G_m)
+#+end_src
+
+* Functions
+:PROPERTIES:
+:header-args:matlab+: :comments none :mkdirp yes :eval no
+:END:
+
+** =extractEigs=: Extract Eigen Values and Eigen Vectors
+:PROPERTIES:
+:header-args:matlab+: :tangle src/extractEigs.m
+:END:
+<<sec:extractEigs>>
+
+This Matlab function is accessible [[file:src/extractEigs.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  function [w, zm] = extractEigs(filename, args)
+  % extractEigs -
+  %
+  % Syntax: [w, zm] = extractEigs(filename, args)
+  %
+  % Inputs:
+  %    - filename - relative or absolute path of the file that contains the eigenvectors and eigenvalues
+  %    - args - Optional parameters:
+  %        - 'dirs' - [6 x 1] - ones(6,1) (default)
+  %                           - Vectors with 0 and 1 identifying directions to include in the modal matrix
+  %                           - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
+  %        - 'soft' - 'ansys' (default) - Software used for the FEM
+  %
+  % Outputs:
+  %    - w  - [m x 1] - Eigenvalues [Hz]
+  %    - zm - [(n x dofs) x m] - Modal Matrix containing the eigenvectors
+  %                            - zm(1:n, i) corresponds to the eigenvector for mode i and for first dir considered
+  %                            - zm((n-1)*j+1:n*j, i) corresponds to the eigenvector for i'th mode and for j'th dir considered
+#+end_src
+
+*** Optional Parameters
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+      filename
+      args.dirs (6,1) double {mustBeNumericOrLogical}            = ones(6,1)
+      args.soft       char   {mustBeMember(args.soft,{'ansys'})} = 'ansys'
+  end
+#+end_src
+
+*** Open the file
+#+begin_src matlab
+  fid = fopen(filename,'rt');
+
+  if fid == -1
+      error('Error opening the file');
+  end
+#+end_src
+
+*** Extract Eigenvalues - Ansys
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+#+begin_src matlab
+  if strcmp(args.soft, 'ansys')
+      w = [];
+      zm = [];
+
+      while 1
+          % Read a line
+          nextline = fgetl(fid);
+
+          % End of the file
+          if ~isstr(nextline), break, end
+
+          % Lines containing the mode numbers
+          if contains(nextline, ' LOAD STEP=') && ...
+                  contains(nextline, 'SUBSTEP=') && ...
+                  ~contains(nextline, 'CUM')
+              mode_num = sscanf(nextline, ' LOAD STEP= %*f  SUBSTEP= %f ');
+          end
+
+          % Lines containing the frequency of the modes
+          if contains(nextline, 'FREQ=')
+              w = [w; sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
+          end
+
+          % Start of the eigenvectors
+          if contains(nextline, 'ROTZ')
+              zmi = [];
+
+              % Read the eigenvectors for each of the nodes
+              while 1
+                  nextline = fgetl(fid);
+                  c = sscanf(nextline, ' %f');
+                  if isempty(c), break, end
+                  zmi = [zmi; c(2:end)'];
+              end
+
+              zm (:, :, mode_num) = zmi;
+          end
+      end
+
+      zm = reshape(zm(:, logical([0; args.dirs]), :), [], mode_num);
+  end
+#+end_src
+
+*** Close the file
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  fclose(fid);
+#+end_src
