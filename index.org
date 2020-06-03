@@ -38,11 +38,28 @@
 #+PROPERTY: header-args:latex+ :output-dir figs
 :END:
 
-* Import Flexible Elements in Simscape
+* Introduction                                                        :ignore:
+This small toolbox provides a set of functions to help using flexible elements on Simscape from a Finite Element Software.
+
+The functions are all described in section [[sec:functions]].
+
+Few examples are provided in the following sections.
+
+* Import Flexible Elements in Simscape using Component Mode Synthesis in Ansys
 :PROPERTIES:
 :header-args:matlab+: :tangle examples/cant_beam/cant_beam.m
 :header-args:matlab+: :comments none :mkdirp yes
 :END:
+
+** Introduction                                                      :ignore:
+In this section, we wish to model a simple flexible cantilever beam using Simscape.
+
+The cantilever beam is first defined in Ansys.
+The reduced Mass and Stiffness matrices are then exported using the Component Mode Synthesis.
+
+The coordinates of interface nodes (nodes where forces can be applied, displacements measured, and connections with other elements) are also exported.
+
+First, these information are imported in Matlab, and then are used in Simscape to model the flexible element.
 
 ** Matlab Init                                              :noexport:ignore:
 #+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
@@ -67,6 +84,7 @@ We first extract the stiffness matrix.
   data2orgtable(K(1:10, 1:10), {}, {}, ' %.1e ');
 #+end_src
 
+#+caption: First 10x10 elements of the Stiffness matrix
 #+RESULTS:
 |  42000.0 |    0.0 |     0.0 |       0.0 |       0.0 |       0.0 | -42000.0 |     0.0 |    0.0 |       0.0 |
 |      0.0 |   17.0 |     0.0 |       0.0 |       0.0 |    4200.0 |      0.0 |   -17.0 |    0.0 |       0.0 |
@@ -87,6 +105,7 @@ We first extract the stiffness matrix.
   data2orgtable(M(1:10, 1:10), {}, {}, ' %.1e ');
 #+end_src
 
+#+caption: First 10x10 elements of the Mass matrix
 #+RESULTS:
 | 0.00013 |     0.0 |     0.0 |    0.0 |    0.0 |   0.0 | 6.5e-05 |     0.0 |     0.0 |    0.0 |
 |     0.0 | 0.00014 |     0.0 |    0.0 |    0.0 |  0.01 |     0.0 |   5e-05 |     0.0 |    0.0 |
@@ -108,6 +127,7 @@ Then, we extract the coordinates of the interface nodes.
   data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x', 'y', 'z'}, ' %.0f ');
 #+end_src
 
+#+caption: Coordinates of the interface nodes
 #+RESULTS:
 | Node Number |    x | y | z |
 |-------------+------+---+---|
@@ -160,6 +180,12 @@ exportFig('figs/cant_beam_frf.pdf', 'width', 'wide', 'height', 'tall');
 [[file:figs/cant_beam_frf.png]]
 
 * Matlab with ANSYS
+:PROPERTIES:
+:header-args:matlab+: :tangle examples/cant_beam/cant_beam.m
+:header-args:matlab+: :comments none :mkdirp yes
+:END:
+
+** Introduction                                                      :ignore:
 ** Matlab Init                                              :noexport:ignore:
 #+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
   <<matlab-dir>>
@@ -772,6 +798,7 @@ And other option is to specify the minimum value of the gramians diagonal elemen
 #+end_src
 
 * Functions
+<<sec:functions>>
 :PROPERTIES:
 :header-args:matlab+: :comments none :mkdirp yes :eval no
 :END:

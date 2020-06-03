@@ -1,0 +1,2011 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2020-06-03 mer. 15:51 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Finite Element Model - Matlab Toolbox</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="Dehaeze Thomas" />
+<link rel="stylesheet" type="text/css" href="./css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="./css/readtheorg.css"/>
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.min.js"></script>
+<script src="./js/jquery.stickytableheaders.min.js"></script>
+<script src="./js/readtheorg.js"></script>
+</head>
+<body>
+<div id="org-div-home-and-up">
+ <a accesskey="h" href="./index.html"> UP </a>
+ |
+ <a accesskey="H" href="./index.html"> HOME </a>
+</div><div id="content">
+<h1 class="title">Finite Element Model - Matlab Toolbox</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgd853fc1">1. Import Flexible Elements in Simscape</a>
+<ul>
+<li><a href="#org5b9dd53">1.1. Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates</a></li>
+<li><a href="#org7ca4ddb">1.2. Identification of the Dynamics</a></li>
+</ul>
+</li>
+<li><a href="#org0add835">2. Matlab with ANSYS</a>
+<ul>
+<li><a href="#org00584e0">2.1. Extract values</a></li>
+<li><a href="#org142ebc6">2.2. Define Physical Inputs and Outputs</a></li>
+<li><a href="#org434f3de">2.3. Define Damping</a></li>
+<li><a href="#orgc7a2e93">2.4. Alternative Definition of the matrix A</a></li>
+<li><a href="#orgcd9fffb">2.5. All Modes Included in the Model</a></li>
+<li><a href="#orgd839ee4">2.6. Simple mode truncation</a></li>
+<li><a href="#orgbbdd33f">2.7. Modes sorted by their DC gain</a></li>
+<li><a href="#orgd45d3ad">2.8. Comparison</a></li>
+<li><a href="#org0f6a572">2.9. Effect of the Individual Modes</a></li>
+<li><a href="#org9e5a2f3">2.10. Non-Uniform Damping</a>
+<ul>
+<li><a href="#orgbd1ac5b">2.10.1. Definition of the Damping</a></li>
+<li><a href="#org4d3aa64">2.10.2. System Creation</a></li>
+<li><a href="#orgc246937">2.10.3. Comparison with Uniform Damping</a></li>
+<li><a href="#org4822e3f">2.10.4. Modes sorted by their peak gain</a></li>
+</ul>
+</li>
+<li><a href="#orgcc7352b">2.11. MIMO System</a>
+<ul>
+<li><a href="#org7800130">2.11.1. Inputs and Outputs</a></li>
+<li><a href="#org1b75ed7">2.11.2. System Matrices</a></li>
+<li><a href="#org0d6405f">2.11.3. Balancing Reduction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#orga73c616">3. Functions</a>
+<ul>
+<li><a href="#org2fbc5a3">3.1. <code>extractMatrix</code>: Extract Mass/Stiffness matrices</a>
+<ul>
+<li><a href="#orgd2fdb99">Function description</a></li>
+<li><a href="#orgc7e3f49">Optional Parameters</a></li>
+<li><a href="#org80e19bd">Read the file</a></li>
+<li><a href="#org47d37db">Extract the Matrix</a></li>
+</ul>
+</li>
+<li><a href="#org6d965b5">3.2. <code>extractNodes</code>: Extract Nodes positions and Interfaces DoFs</a>
+<ul>
+<li><a href="#orgc1fee42">Function description</a></li>
+<li><a href="#orgb5d5bfb">Optional Parameters</a></li>
+<li><a href="#org3cf48f4">Read the file</a></li>
+<li><a href="#org9c4b352">Extract Nodes</a></li>
+<li><a href="#org1875d38">Close the file</a></li>
+<li><a href="#org737401d">Get XYZ coordinates of the interface nodes</a></li>
+</ul>
+</li>
+<li><a href="#orge7ce876">3.3. <code>extractEigs</code>: Extract Eigen Values and Eigen Vectors</a>
+<ul>
+<li><a href="#org0d6ee58">Function description</a></li>
+<li><a href="#orgc427ff3">Optional Parameters</a></li>
+<li><a href="#org7004d4c">Open the file</a></li>
+<li><a href="#org881fb65">Extract Eigenvalues - Ansys</a></li>
+<li><a href="#orge963355">Close the file</a></li>
+</ul>
+</li>
+<li><a href="#org105f58a">3.4. <code>normalizeEigs</code>: Normalize Eigen Vectors</a>
+<ul>
+<li><a href="#org16eb60e">Function description</a></li>
+<li><a href="#orge7c7295">Optional Parameters</a></li>
+<li><a href="#org082ff4d">Normalize the Eigen Vectors - Mass Method</a></li>
+<li><a href="#orgc9b5e4c">Normalize the Eigen Vectors - Unity Method</a></li>
+</ul>
+</li>
+<li><a href="#orgdf507ff">3.5. <code>reductionInOut</code>: Reduce the Modal matrix to some nodes</a>
+<ul>
+<li><a href="#orga59981f">Function description</a></li>
+<li><a href="#org7782ac5">Arguments</a></li>
+<li><a href="#org546a01f">Size Reduction</a></li>
+</ul>
+</li>
+<li><a href="#orga60acfe">3.6. <code>computeModalDamping</code> - Compute the Damping</a>
+<ul>
+<li><a href="#orgab3de11">Function description</a></li>
+<li><a href="#org150a29c">Arguments</a></li>
+</ul>
+</li>
+<li><a href="#org7134937">3.7. <code>sortModes</code> - Sort Modes</a>
+<ul>
+<li><a href="#org297169e">Function description</a></li>
+<li><a href="#org4491b77">Arguments</a></li>
+</ul>
+</li>
+<li><a href="#org8ae58c9">3.8. <code>reduceModes</code> - Get Modes numbers for the reduced model</a>
+<ul>
+<li><a href="#orgc8247bf">Function description</a></li>
+<li><a href="#org7846a9e">Arguments</a></li>
+</ul>
+</li>
+<li><a href="#orgf82eec7">3.9. <code>createStateSpaceModel</code> - Create the Reduced State Space Model</a>
+<ul>
+<li><a href="#org26f8481">Function description</a></li>
+<li><a href="#org2e03cf8">Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgd853fc1" class="outline-2">
+<h2 id="orgd853fc1"><span class="section-number-2">1</span> Import Flexible Elements in Simscape</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+
+<div id="outline-container-org5b9dd53" class="outline-3">
+<h3 id="org5b9dd53"><span class="section-number-3">1.1</span> Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+We first extract the stiffness matrix.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">K = extractMatrix('cant_beam_K.txt');
+</pre>
+</div>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> First 10x10 elements of the Stiffness matrix</caption>
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">42000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-42000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">17.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-17.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">17.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-17.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">230000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-230000.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">1400000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">4200.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">1400000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">-42000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">84000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">-17.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">34.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-17.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">4200.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">34.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-230000.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">460000.0</td>
+</tr>
+</tbody>
+</table>
+
+<div class="org-src-container">
+<pre class="src src-matlab">M = extractMatrix('cant_beam_M.txt');
+</pre>
+</div>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 2:</span> First 10x10 elements of the Mass matrix</caption>
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">0.00013</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">6.5e-05</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.00014</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.01</td>
+<td class="org-right">0.0</td>
+<td class="org-right">5e-05</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.00014</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-0.01</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">5e-05</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0022</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0011</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-0.01</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.93</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-0.006</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.01</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.93</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.006</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">6.5e-05</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.00026</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">5e-05</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.006</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.00029</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">5e-05</td>
+<td class="org-right">0.0</td>
+<td class="org-right">-0.006</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.00029</td>
+<td class="org-right">0.0</td>
+</tr>
+
+<tr>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0011</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0</td>
+<td class="org-right">0.0043</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Then, we extract the coordinates of the interface nodes.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">[int_xyz, int_i] = extractNodes('cant_beam.txt');
+</pre>
+</div>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 3:</span> Coordinates of the interface nodes</caption>
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Node Number</th>
+<th scope="col" class="org-right">x</th>
+<th scope="col" class="org-right">y</th>
+<th scope="col" class="org-right">z</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-right">500</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+</tr>
+
+<tr>
+<td class="org-right">22</td>
+<td class="org-right">1000</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Using <code>K</code>, <code>M</code> and <code>int_xyz</code>, we can use the <code>Reduced Order Flexible Solid</code> simscape block.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7ca4ddb" class="outline-3">
+<h3 id="org7ca4ddb"><span class="section-number-3">1.2</span> Identification of the Dynamics</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+The flexible element is imported using the <code>Reduced Order Flexible Solid</code> simscape block.
+</p>
+
+<p>
+The beginning of the cantilever beam is fixed to the World frame, a force actuator is added in the z direction on the middle node, and a z-displacement sensor is added at the end of the beam.
+</p>
+
+<p>
+The dynamics is identified from the applied force to the measured displacement (Figure <a href="#orgb9f2476">1</a>).
+</p>
+
+<div class="org-src-container">
+<pre class="src src-matlab">%% Name of the Simulink File
+mdl = 'cant_beam';
+
+%% Input/Output definition
+clear io; io_i = 1;
+io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
+io(io_i) = linio([mdl, '/z'], 1, 'openoutput'); io_i = io_i + 1;
+
+G = linearize(mdl, io);
+</pre>
+</div>
+
+
+<div id="orgb9f2476" class="figure">
+<p><img src="figs/cant_beam_frf.png" alt="cant_beam_frf.png" />
+</p>
+<p><span class="figure-number">Figure 1: </span>Identify transfer function from a vertical force applied at the middle point of the cantilever beam to its vertical displacement</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0add835" class="outline-2">
+<h2 id="org0add835"><span class="section-number-2">2</span> Matlab with ANSYS</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-org00584e0" class="outline-3">
+<h3 id="org00584e0"><span class="section-number-3">2.1</span> Extract values</h3>
+<div class="outline-text-3" id="text-2-1">
+<div class="org-src-container">
+<pre class="src src-matlab">[w, zm] = extractEigs('cantbeam30bl.eig', 'dirs', [1 0 0 0 0 0]');
+% % dir = 3; % UY
+% [xn, f0] = readEigFile(filename, dir);
+
+% n_nodes = size(xn, 1);
+% n_modes = size(xn, 2);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org142ebc6" class="outline-3">
+<h3 id="org142ebc6"><span class="section-number-3">2.2</span> Define Physical Inputs and Outputs</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+First, define the node numbers corresponding to the inputs and outputs
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">i_input = 14;
+i_output = 29;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org434f3de" class="outline-3">
+<h3 id="org434f3de"><span class="section-number-3">2.3</span> Define Damping</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+We here use uniform damping.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">xi = 0.01;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc7a2e93" class="outline-3">
+<h3 id="orgc7a2e93"><span class="section-number-3">2.4</span> Alternative Definition of the matrix A</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+I could define 2x2 sub-matrices each corresponding to a particular mode and then combine them using <code>blkdiag</code> command.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcd9fffb" class="outline-3">
+<h3 id="orgcd9fffb"><span class="section-number-3">2.5</span> All Modes Included in the Model</h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+System Matrix - A
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*n_modes,1);
+Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+Adiagsup = zeros(2*n_modes-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*n_modes-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*n_modes, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*n_modes);
+C(:, 1:2:end) = xn(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_f = ss(A, B, C, D);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd839ee4" class="outline-3">
+<h3 id="orgd839ee4"><span class="section-number-3">2.6</span> Simple mode truncation</h3>
+<div class="outline-text-3" id="text-2-6">
+<p>
+Let&rsquo;s plot the frequency of the modes (Figure <a href="#org44fad43">2</a>).
+</p>
+
+
+<div id="org44fad43" class="figure">
+<p><img src="figs/hatch00_cant_beam_modes_freq.png" alt="hatch00_cant_beam_modes_freq.png" />
+</p>
+<p><span class="figure-number">Figure 2: </span>Frequency of the modes</p>
+</div>
+
+
+<div id="orgd3949d4" class="figure">
+<p><img src="figs/hatch00_cant_beam_unsorted_dc_gains.png" alt="hatch00_cant_beam_unsorted_dc_gains.png" />
+</p>
+<p><span class="figure-number">Figure 3: </span>Unsorted DC Gains</p>
+</div>
+
+<p>
+Let&rsquo;s keep only the first 10 modes.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">m_max = 10;
+xn_t = xn(:, 1:m_max);
+f0_t = f0(1:m_max);
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*m_max,1);
+Adiag(2:2:end) = -2*xi.*(2*pi*f0_t);
+
+Adiagsup = zeros(2*m_max-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*m_max-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0_t).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*m_max, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn_t'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*m_max);
+C(:, 1:2:end) = xn_t(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_t = ss(A, B, C, D);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbbdd33f" class="outline-3">
+<h3 id="orgbbdd33f"><span class="section-number-3">2.7</span> Modes sorted by their DC gain</h3>
+<div class="outline-text-3" id="text-2-7">
+<p>
+Let&rsquo;s sort the modes by their DC gains and plot their sorted DC gains.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-matlab">dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
+
+[dc_gain_sort, index_sort] = sort(dc_gain, 'descend');
+</pre>
+</div>
+
+
+<div id="org9bd90e1" class="figure">
+<p><img src="figs/hatch00_cant_beam_sorted_dc_gains.png" alt="hatch00_cant_beam_sorted_dc_gains.png" />
+</p>
+<p><span class="figure-number">Figure 4: </span>Sorted DC Gains</p>
+</div>
+
+<p>
+Let&rsquo;s keep only the first 10 <b>sorted</b> modes.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">m_max = 10;
+
+xn_s = xn(:, index_sort(1:m_max));
+f0_s = f0(index_sort(1:m_max));
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*m_max,1);
+Adiag(2:2:end) = -2*xi.*(2*pi*f0_s);
+
+Adiagsup = zeros(2*m_max-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*m_max-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0_s).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*m_max, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn_s'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*m_max);
+C(:, 1:2:end) = xn_s(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_s = ss(A, B, C, D);
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgd45d3ad" class="outline-3">
+<h3 id="orgd45d3ad"><span class="section-number-3">2.8</span> Comparison</h3>
+<div class="outline-text-3" id="text-2-8">
+<div class="org-src-container">
+<pre class="src src-matlab">freqs = logspace(0, 5, 1000);
+
+figure;
+hold on;
+plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Full');
+plot(freqs, abs(squeeze(freqresp(G_t, freqs, 'Hz'))), 'DisplayName', 'Trun');
+plot(freqs, abs(squeeze(freqresp(G_s, freqs, 'Hz'))), 'DisplayName', 'Sort');
+set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+ylabel('Amplitude'); xlabel('Frequency [Hz]');
+legend();
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0f6a572" class="outline-3">
+<h3 id="org0f6a572"><span class="section-number-3">2.9</span> Effect of the Individual Modes</h3>
+<div class="outline-text-3" id="text-2-9">
+<div class="org-src-container">
+<pre class="src src-matlab">freqs = logspace(0, 4, 1000);
+
+figure;
+hold on;
+for mode_i = 1:6
+    A = zeros(2);
+    A(2,2) = -2*xi.*(2*pi*f0(mode_i));
+    A(1,2) = 1;
+    A(2,1) = -(2*pi*f0(mode_i)).^2;
+
+    B = [0; xn(i_input, mode_i)'];
+
+    C = [xn(i_output, mode_i), 0];
+
+    D = zeros(length(i_output), length(i_input));
+
+    plot(freqs, abs(squeeze(freqresp(ss(A,B,C,D), freqs, 'Hz'))), ...
+         'DisplayName', sprintf('Mode %i', mode_i));
+end
+plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'k--', ...
+     'DisplayName', 'Full');
+set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+ylabel('Amplitude'); xlabel('Frequency [Hz]');
+legend();
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org9e5a2f3" class="outline-3">
+<h3 id="org9e5a2f3"><span class="section-number-3">2.10</span> Non-Uniform Damping</h3>
+<div class="outline-text-3" id="text-2-10">
+</div>
+<div id="outline-container-orgbd1ac5b" class="outline-4">
+<h4 id="orgbd1ac5b"><span class="section-number-4">2.10.1</span> Definition of the Damping</h4>
+<div class="outline-text-4" id="text-2-10-1">
+<p>
+If we want to use Rayleigh damping:
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">a = 1e-2;
+b = 1e-6;
+xi = (a + b * (2*pi*f0).^2)./(2*pi*f0);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4d3aa64" class="outline-4">
+<h4 id="org4d3aa64"><span class="section-number-4">2.10.2</span> System Creation</h4>
+<div class="outline-text-4" id="text-2-10-2">
+<p>
+System Matrix - A
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*n_modes,1);
+Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+Adiagsup = zeros(2*n_modes-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*n_modes-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*n_modes, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*n_modes);
+C(:, 1:2:end) = xn(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_d = ss(A, B, C, D);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc246937" class="outline-4">
+<h4 id="orgc246937"><span class="section-number-4">2.10.3</span> Comparison with Uniform Damping</h4>
+<div class="outline-text-4" id="text-2-10-3">
+<div class="org-src-container">
+<pre class="src src-matlab">freqs = logspace(0, 5, 1000);
+
+figure;
+hold on;
+plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Uniform Damping');
+plot(freqs, abs(squeeze(freqresp(G_d, freqs, 'Hz'))), 'DisplayName', 'Non-Uniform Damping');
+set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+ylabel('Amplitude'); xlabel('Frequency [Hz]');
+legend();
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4822e3f" class="outline-4">
+<h4 id="org4822e3f"><span class="section-number-4">2.10.4</span> Modes sorted by their peak gain</h4>
+<div class="outline-text-4" id="text-2-10-4">
+<p>
+Let&rsquo;s sort the modes by their peak gains and plot their sorted peak gains.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-matlab">dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
+peak_gain = dc_gain./xi;
+
+[peak_gain_sort, index_sort] = sort(peak_gain, 'descend');
+</pre>
+</div>
+
+<p>
+Let&rsquo;s keep only the first 10 <b>sorted</b> modes.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">m_max = 10;
+
+xn_s = xn(:, index_sort(1:m_max));
+f0_s = f0(index_sort(1:m_max));
+xi_x = xi(index_sort(1:m_max));
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*m_max,1);
+Adiag(2:2:end) = -2*xi_s.*(2*pi*f0_s);
+
+Adiagsup = zeros(2*m_max-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*m_max-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0_s).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*m_max, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn_s'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*m_max);
+C(:, 1:2:end) = xn_s(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_p = ss(A, B, C, D);
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-matlab">freqs = logspace(0, 5, 1000);
+
+figure;
+hold on;
+plot(freqs, abs(squeeze(freqresp(G_f, freqs, 'Hz'))), 'DisplayName', 'Uniform Damping');
+plot(freqs, abs(squeeze(freqresp(G_d, freqs, 'Hz'))), 'DisplayName', 'Non-Uniform Damping');
+plot(freqs, abs(squeeze(freqresp(G_p, freqs, 'Hz'))), 'DisplayName', 'Peak sort');
+set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+ylabel('Amplitude'); xlabel('Frequency [Hz]');
+legend();
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgcc7352b" class="outline-3">
+<h3 id="orgcc7352b"><span class="section-number-3">2.11</span> MIMO System</h3>
+<div class="outline-text-3" id="text-2-11">
+</div>
+<div id="outline-container-org7800130" class="outline-4">
+<h4 id="org7800130"><span class="section-number-4">2.11.1</span> Inputs and Outputs</h4>
+<div class="outline-text-4" id="text-2-11-1">
+<p>
+Let&rsquo;s choose two inputs and two outputs.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">i_input = [14, 31];
+i_output = [14, 31];
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1b75ed7" class="outline-4">
+<h4 id="org1b75ed7"><span class="section-number-4">2.11.2</span> System Matrices</h4>
+<div class="outline-text-4" id="text-2-11-2">
+<p>
+System Matrix - A
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">Adiag = zeros(2*n_modes,1);
+Adiag(2:2:end) = -2*xi.*(2*pi*f0);
+
+Adiagsup = zeros(2*n_modes-1,1);
+Adiagsup(1:2:end) = 1;
+
+Adiaginf = zeros(2*n_modes-1,1);
+Adiaginf(1:2:end) = -(2*pi*f0).^2;
+
+A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
+</pre>
+</div>
+
+<p>
+System Matrix - B
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">B = zeros(2*n_modes, length(i_input));
+
+for i = 1:length(i_input)
+    % Physical Coordinates
+    Fp = zeros(n_nodes, 1);
+    Fp(i_input(i)) = 1;
+
+    B(2:2:end, i) = xn'*Fp;
+end
+</pre>
+</div>
+
+<p>
+System Matrix - C
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">C = zeros(length(i_output), 2*n_modes);
+C(:, 1:2:end) = xn(i_output, :);
+</pre>
+</div>
+
+<p>
+System Matrix - D
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">D = zeros(length(i_output), length(i_input));
+</pre>
+</div>
+
+<p>
+State Space Model
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_m = ss(A, B, C, D);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0d6405f" class="outline-4">
+<h4 id="org0d6405f"><span class="section-number-4">2.11.3</span> Balancing Reduction</h4>
+<div class="outline-text-4" id="text-2-11-3">
+<p>
+First, we have to make sure that the rigid body mode is not included in the system (here it is not).
+</p>
+
+<p>
+Then, we compute the controllability and observability gramians.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">wc = gram(G_m, 'c');
+wo = gram(G_m, 'o');
+</pre>
+</div>
+
+<p>
+And we plot the diagonal terms
+</p>
+
+<div id="orgf5b12ad" class="figure">
+<p><img src="figs/hatch00_gramians.png" alt="hatch00_gramians.png" />
+</p>
+<p><span class="figure-number">Figure 5: </span>Observability and Controllability Gramians</p>
+</div>
+
+<p>
+We use <code>balreal</code> to rank oscillatory states.
+</p>
+<blockquote>
+<p>
+[SYSB,G] = BALREAL(SYS) computes a balanced state-space realization for
+the stable portion of the linear system SYS. For stable systems, SYSB
+is an equivalent realization for which the controllability and
+observability Gramians are equal and diagonal, their diagonal entries
+forming the vector G of Hankel singular values. Small entries in G
+indicate states that can be removed to simplify the model (use MODRED
+to reduce the model order).
+</p>
+</blockquote>
+
+<div class="org-src-container">
+<pre class="src src-matlab">[G_b, G, T, Ti] = balreal(G_m);
+</pre>
+</div>
+
+
+<div id="org07aea39" class="figure">
+<p><img src="figs/hatch00_cant_beam_gramian_balanced.png" alt="hatch00_cant_beam_gramian_balanced.png" />
+</p>
+<p><span class="figure-number">Figure 6: </span>Sorted values of the Gramian of the balanced realization</p>
+</div>
+
+<p>
+Now we can choose the number of states to keep.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">n_states_b = 20;
+</pre>
+</div>
+
+<p>
+We now use <code>modred</code> to define reduced order oscillatory system using <code>mathdc</code> or <code>truncate</code> option.
+</p>
+<blockquote>
+<p>
+MODRED  Model simplification by state elimination.
+</p>
+
+<p>
+RSYS = MODRED(SYS,ELIM) simplifies the state-space model SYS by
+discarding the states specified in the vector ELIM. The full state
+vector X is partitioned as X = [X1;X2] where Xr=X1 is the reduced
+state vector and X2 is discarded.
+</p>
+</blockquote>
+
+<div class="org-src-container">
+<pre class="src src-matlab">G_br = modred(G_b, n_states_b+1:size(A,1), 'truncate');
+</pre>
+</div>
+
+<p>
+If needed, the rigid body mode should be added to the reduced system.
+</p>
+
+<p>
+And other option is to specify the minimum value of the gramians diagonal elements for the modes to keep.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">G_min = 1e-4;
+G_br = modred(G_b, G&lt;G_min, 'truncate');
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-matlab">figure;
+bodemag(G_br, G_m)
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga73c616" class="outline-2">
+<h2 id="orga73c616"><span class="section-number-2">3</span> Functions</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+
+<div id="outline-container-org2fbc5a3" class="outline-3">
+<h3 id="org2fbc5a3"><span class="section-number-3">3.1</span> <code>extractMatrix</code>: Extract Mass/Stiffness matrices</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+<a id="org4f363a0"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/extractMatrix.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-orgd2fdb99" class="outline-4">
+<h4 id="orgd2fdb99">Function description</h4>
+<div class="outline-text-4" id="text-orgd2fdb99">
+<div class="org-src-container">
+<pre class="src src-matlab">function [M] = extractMatrix(filename)
+% extractMatrix -
+%
+% Syntax: [M] = extractMatrix(filename)
+%
+% Inputs:
+%    - filename - relative or absolute path of the file that contains the Matrix
+%
+% Outputs:
+%    - M - Matrix that is contained in the file
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc7e3f49" class="outline-4">
+<h4 id="orgc7e3f49">Optional Parameters</h4>
+<div class="outline-text-4" id="text-orgc7e3f49">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+    filename
+end
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org80e19bd" class="outline-4">
+<h4 id="org80e19bd">Read the file</h4>
+<div class="outline-text-4" id="text-org80e19bd">
+<div class="org-src-container">
+<pre class="src src-matlab">str = fileread(filename);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org47d37db" class="outline-4">
+<h4 id="org47d37db">Extract the Matrix</h4>
+<div class="outline-text-4" id="text-org47d37db">
+<div class="org-src-container">
+<pre class="src src-matlab">str = regexprep(str,'\s+','');
+
+parts = regexp(str, '\[(?&lt;row&gt;\d+),(?&lt;col&gt;\d+)\]:(?&lt;val&gt;[^\[]+)', 'names');
+</pre>
+</div>
+
+<p>
+Get the number of column and rows
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">row = cellfun(@str2double, {parts.row}, 'UniformOutput', true);
+
+col = cellfun(@str2double, {parts.col}, 'UniformOutput', true);
+</pre>
+</div>
+
+<p>
+Get the values of the matrix
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">val = cellfun(@str2double, {parts.val}, 'UniformOutput', true);
+</pre>
+</div>
+
+<p>
+Get the size of the matrix
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">sz = [max(row), max(col)];
+</pre>
+</div>
+
+<p>
+Create the Matrix with the correct size
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">M = zeros(sz);
+</pre>
+</div>
+
+<p>
+Get matrix position corresponding to the values.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">ix = sub2ind(sz, row, col);
+</pre>
+</div>
+
+<p>
+Finally, data are assigned.
+</p>
+<div class="org-src-container">
+<pre class="src src-matlab">M(ix)= val;
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org6d965b5" class="outline-3">
+<h3 id="org6d965b5"><span class="section-number-3">3.2</span> <code>extractNodes</code>: Extract Nodes positions and Interfaces DoFs</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+<a id="orgb6e4cec"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/extractNodes.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-orgc1fee42" class="outline-4">
+<h4 id="orgc1fee42">Function description</h4>
+<div class="outline-text-4" id="text-orgc1fee42">
+<div class="org-src-container">
+<pre class="src src-matlab">function [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes(filename)
+% extractNodes -
+%
+% Syntax: [n_xyz, nodes] = extractNodes(filename)
+%
+% Inputs:
+%    - filename - relative or absolute path of the file that contains the Matrix
+%
+% Outputs:
+%    - n_xyz -
+%    - nodes - table containing the node numbers and corresponding dof of the interfaced DoFs
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgb5d5bfb" class="outline-4">
+<h4 id="orgb5d5bfb">Optional Parameters</h4>
+<div class="outline-text-4" id="text-orgb5d5bfb">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+    filename
+end
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org3cf48f4" class="outline-4">
+<h4 id="org3cf48f4">Read the file</h4>
+<div class="outline-text-4" id="text-org3cf48f4">
+<div class="org-src-container">
+<pre class="src src-matlab">fid = fopen(filename,'rt');
+
+if fid == -1
+    error('Error opening the file');
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org9c4b352" class="outline-4">
+<h4 id="org9c4b352">Extract Nodes</h4>
+<div class="outline-text-4" id="text-org9c4b352">
+<div class="org-src-container">
+<pre class="src src-matlab">n_xyz = []; % Contains nodes coordinates
+n_i = []; % Contains nodes indices
+
+while 1
+    % Read a line
+    nextline = fgetl(fid);
+
+    % End of the file
+    if ~isstr(nextline), break, end
+
+    % Line just before the list of nodes coordinates
+    if contains(nextline, 'NODE') &amp;&amp; ...
+            contains(nextline, 'X') &amp;&amp; ...
+            contains(nextline, 'Y') &amp;&amp; ...
+            contains(nextline, 'Z')
+
+        while 1
+            nextline = fgetl(fid);
+
+            c = sscanf(nextline, ' %f');
+
+            if isempty(c), break, end
+
+            n_xyz = [n_xyz; c(2:end)'];
+            n_i = [n_i; c(1)];
+        end
+    end
+
+    % Line just before the list of node DOF
+    if contains(nextline, 'NODE DOF')
+        n_num = []; % Contains node numbers
+        n_dof = {}; % Contains node directions
+
+        while 1
+            nextline = fgetl(fid);
+
+            if nextline &lt; 0, break, end
+
+            c = sscanf(nextline, ' %d %s');
+
+            if isempty(c), break, end
+
+            n_num = [n_num; c(1)];
+
+            n_dof{length(n_dof)+1} = char(c(2:end)');
+        end
+
+        nodes = table(n_num, string(n_dof'), 'VariableNames', {'node_i', 'node_dof'});
+    end
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1875d38" class="outline-4">
+<h4 id="org1875d38">Close the file</h4>
+<div class="outline-text-4" id="text-org1875d38">
+<div class="org-src-container">
+<pre class="src src-matlab">fclose(fid);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org737401d" class="outline-4">
+<h4 id="org737401d">Get XYZ coordinates of the interface nodes</h4>
+<div class="outline-text-4" id="text-org737401d">
+<div class="org-src-container">
+<pre class="src src-matlab">int_i = unique(nodes.('node_i')); % indices of interface nodes
+
+% Extract XYZ coordinates of only the interface nodes
+int_xyz = n_xyz(logical(sum(n_i.*ones(1, length(int_i)) == int_i', 2)), :);
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orge7ce876" class="outline-3">
+<h3 id="orge7ce876"><span class="section-number-3">3.3</span> <code>extractEigs</code>: Extract Eigen Values and Eigen Vectors</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+<a id="org5a27f60"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/extractEigs.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-org0d6ee58" class="outline-4">
+<h4 id="org0d6ee58">Function description</h4>
+<div class="outline-text-4" id="text-org0d6ee58">
+<div class="org-src-container">
+<pre class="src src-matlab">function [zm, w] = extractEigs(filename, args)
+% extractEigs -
+%
+% Syntax: [zm, w] = extractEigs(filename, args)
+%
+% Inputs:
+%    - filename - relative or absolute path of the file that contains the eigenvectors and eigenvalues
+%    - args - Optional parameters:
+%        - dirs - [6 x 1] - ones(6,1) (default)
+%                          - Vectors with 0 and 1 identifying directions to include in the modal matrix
+%                          - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
+%        - soft - 'ansys' (default) - Software used for the FEM
+%
+% Outputs:
+%    - zm - [(n x dofs) x m] - Modal Matrix containing the eigenvectors
+%                            - zm(1:n, i) corresponds to the eigenvector for mode i and for first dir considered
+%                            - zm((n-1)*j+1:n*j, i) corresponds to the eigenvector for i'th mode and for j'th dir considered
+%    - w  - [m x 1] - Eigenvalues [Hz]
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc427ff3" class="outline-4">
+<h4 id="orgc427ff3">Optional Parameters</h4>
+<div class="outline-text-4" id="text-orgc427ff3">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+    filename
+    args.dirs (6,1) double {mustBeNumericOrLogical}            = ones(6,1)
+    args.soft       char   {mustBeMember(args.soft,{'ansys'})} = 'ansys'
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7004d4c" class="outline-4">
+<h4 id="org7004d4c">Open the file</h4>
+<div class="outline-text-4" id="text-org7004d4c">
+<div class="org-src-container">
+<pre class="src src-matlab">fid = fopen(filename,'rt');
+
+if fid == -1
+    error('Error opening the file');
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org881fb65" class="outline-4">
+<h4 id="org881fb65">Extract Eigenvalues - Ansys</h4>
+<div class="outline-text-4" id="text-org881fb65">
+<div class="org-src-container">
+<pre class="src src-matlab">if strcmp(args.soft, 'ansys')
+    w = [];
+    zm = [];
+
+    while 1
+        % Read a line
+        nextline = fgetl(fid);
+
+        % End of the file
+        if ~isstr(nextline), break, end
+
+        % Lines containing the mode numbers
+        if contains(nextline, ' LOAD STEP=') &amp;&amp; ...
+                contains(nextline, 'SUBSTEP=') &amp;&amp; ...
+                ~contains(nextline, 'CUM')
+            mode_num = sscanf(nextline, ' LOAD STEP= %*f  SUBSTEP= %f ');
+        end
+
+        % Lines containing the frequency of the modes
+        if contains(nextline, 'FREQ=')
+            w = [w, sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
+        end
+
+        % Start of the eigenvectors
+        if contains(nextline, 'ROTZ')
+            zmi = [];
+
+            % Read the eigenvectors for each of the nodes
+            while 1
+                nextline = fgetl(fid);
+                c = sscanf(nextline, ' %f');
+                if isempty(c), break, end
+                zmi = [zmi; c(2:end)'];
+            end
+
+            zm (:, :, mode_num) = zmi;
+        end
+    end
+
+    zm = reshape(zm(:, logical([0; args.dirs]), :), size(zm, 1)*sum(args.dirs), size(zm, 3));
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orge963355" class="outline-4">
+<h4 id="orge963355">Close the file</h4>
+<div class="outline-text-4" id="text-orge963355">
+<div class="org-src-container">
+<pre class="src src-matlab">fclose(fid);
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org105f58a" class="outline-3">
+<h3 id="org105f58a"><span class="section-number-3">3.4</span> <code>normalizeEigs</code>: Normalize Eigen Vectors</h3>
+<div class="outline-text-3" id="text-3-4">
+<p>
+<a id="orgf3299e3"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/normalizeEigs.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-org16eb60e" class="outline-4">
+<h4 id="org16eb60e">Function description</h4>
+<div class="outline-text-4" id="text-org16eb60e">
+<div class="org-src-container">
+<pre class="src src-matlab">function [zn] = normalizeEigs(zm, args)
+% normalizeEigs - Normalize the eigenvectors
+%
+% Syntax: [zn] = normalizeEigs(zm, args)
+%
+% Inputs:
+%    - zm - Modal Matrix
+%    - args - Optional parameters:
+%        - method - 'mass' (default), 'unity' - Method used to normalize the eigenvectors
+%
+% Outputs:
+%    - zn - Normalized Modal Matrix
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orge7c7295" class="outline-4">
+<h4 id="orge7c7295">Optional Parameters</h4>
+<div class="outline-text-4" id="text-orge7c7295">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+    zm
+    args.m      double {mustBeNumeric} = 0
+    args.method char   {mustBeMember(args.method,{'mass', 'unity'})} = 'mass'
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org082ff4d" class="outline-4">
+<h4 id="org082ff4d">Normalize the Eigen Vectors - Mass Method</h4>
+<div class="outline-text-4" id="text-org082ff4d">
+<div class="org-src-container">
+<pre class="src src-matlab">if strcmp(args.method, 'mass')
+    if size(args.m) ~= [size(zm,1), size(zm,1)]
+        error('The provided Mass matrix has not a compatible size with the Modal Matrix')
+    end
+
+    zn = zeros(size(zm));
+    for i = 1:size(zm,2)
+        zn(:,i) = zm(:,i)/sqrt(zm(:,i)'*args.m*zm(:,i));
+    end
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc9b5e4c" class="outline-4">
+<h4 id="orgc9b5e4c">Normalize the Eigen Vectors - Unity Method</h4>
+<div class="outline-text-4" id="text-orgc9b5e4c">
+<div class="org-src-container">
+<pre class="src src-matlab">if strcmp(args.method, 'unity')
+  zn = zm./max(zm);
+end
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgdf507ff" class="outline-3">
+<h3 id="orgdf507ff"><span class="section-number-3">3.5</span> <code>reductionInOut</code>: Reduce the Modal matrix to some nodes</h3>
+<div class="outline-text-3" id="text-3-5">
+<p>
+<a id="org7c17101"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/reductionInOut.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-orga59981f" class="outline-4">
+<h4 id="orga59981f">Function description</h4>
+<div class="outline-text-4" id="text-orga59981f">
+<div class="org-src-container">
+<pre class="src src-matlab">function [zr] = reductionInOut(zn, i_inputs, i_outputs)
+% reductionInOut - Reduce the Modal Matrix to only specified nodes corresponding to Inputs and Ouputs
+%
+% Syntax: [zr] = reductionInOut(zn, i_inputs, i_outputs)
+%
+% Inputs:
+%    - zn        - Normalized Modal Matrix
+%    - i_inputs  - Node indices corresponding to inputs
+%    - i_outputs - Node indices corresponding to inputs
+%
+% Outputs:
+%    - zr - Reduced Normalized Modal Matrix
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7782ac5" class="outline-4">
+<h4 id="org7782ac5">Arguments</h4>
+<div class="outline-text-4" id="text-org7782ac5">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+    zn
+    i_inputs  {mustBeInteger} = 0
+    i_outputs {mustBeInteger} = 0
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org546a01f" class="outline-4">
+<h4 id="org546a01f">Size Reduction</h4>
+<div class="outline-text-4" id="text-org546a01f">
+<div class="org-src-container">
+<pre class="src src-matlab">zr = zn([i_inputs, i_outputs], :);
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orga60acfe" class="outline-3">
+<h3 id="orga60acfe"><span class="section-number-3">3.6</span> <code>computeModalDamping</code> - Compute the Damping</h3>
+<div class="outline-text-3" id="text-3-6">
+<p>
+<a id="org8fb6def"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/computeModalDaping.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-orgab3de11" class="outline-4">
+<h4 id="orgab3de11">Function description</h4>
+<div class="outline-text-4" id="text-orgab3de11">
+<div class="org-src-container">
+<pre class="src src-matlab">function [xi] = computeModalDaping(z, w, args)
+% computeModalDaping -
+%
+% Syntax: [xi] = computeModalDaping(z, w, args)
+%
+% Inputs:
+%    - z, w, args -
+%
+% Outputs:
+%    - xi -
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org150a29c" class="outline-4">
+<h4 id="org150a29c">Arguments</h4>
+<div class="outline-text-4" id="text-org150a29c">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+end
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org7134937" class="outline-3">
+<h3 id="org7134937"><span class="section-number-3">3.7</span> <code>sortModes</code> - Sort Modes</h3>
+<div class="outline-text-3" id="text-3-7">
+<p>
+<a id="org0146259"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/sortModes.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-org297169e" class="outline-4">
+<h4 id="org297169e">Function description</h4>
+<div class="outline-text-4" id="text-org297169e">
+<div class="org-src-container">
+<pre class="src src-matlab">function [modes_i] = sortModes(z, w, xi, args)
+% sortModes -
+%
+% Syntax: [modes_i] = sortModes(z, w, xi, args)
+%
+% Inputs:
+%    - z, w, xi, args -
+%
+% Outputs:
+%    - modes_i -
+
+end
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4491b77" class="outline-4">
+<h4 id="org4491b77">Arguments</h4>
+<div class="outline-text-4" id="text-org4491b77">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+end
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org8ae58c9" class="outline-3">
+<h3 id="org8ae58c9"><span class="section-number-3">3.8</span> <code>reduceModes</code> - Get Modes numbers for the reduced model</h3>
+<div class="outline-text-3" id="text-3-8">
+<p>
+<a id="org9f0b0c0"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/reduceModes.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-orgc8247bf" class="outline-4">
+<h4 id="orgc8247bf">Function description</h4>
+<div class="outline-text-4" id="text-orgc8247bf">
+<div class="org-src-container">
+<pre class="src src-matlab">function [modes_i] = reduceModes(z, w, xi, args)
+% reduceModes -
+%
+% Syntax: [modes_i] = reduceModes(z, w, xi, args)
+%
+% Inputs:
+%    - z, w, xi, args -
+%
+% Outputs:
+%    - modes_i -
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7846a9e" class="outline-4">
+<h4 id="org7846a9e">Arguments</h4>
+<div class="outline-text-4" id="text-org7846a9e">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+end
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgf82eec7" class="outline-3">
+<h3 id="orgf82eec7"><span class="section-number-3">3.9</span> <code>createStateSpaceModel</code> - Create the Reduced State Space Model</h3>
+<div class="outline-text-3" id="text-3-9">
+<p>
+<a id="orgbcd0c0a"></a>
+</p>
+
+<p>
+This Matlab function is accessible <a href="src/createStateSpaceModel.m">here</a>.
+</p>
+</div>
+
+<div id="outline-container-org26f8481" class="outline-4">
+<h4 id="org26f8481">Function description</h4>
+<div class="outline-text-4" id="text-org26f8481">
+<div class="org-src-container">
+<pre class="src src-matlab">function [G] = createStateSpaceModel(z, w, xi, modes_i)
+% createStateSpaceModel -
+%
+% Syntax: [G] = createStateSpaceModel(z, w, xi, modes_i)
+%
+% Inputs:
+%    - z, w, xi, modes_i -
+%
+% Outputs:
+%    - G -
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org2e03cf8" class="outline-4">
+<h4 id="org2e03cf8">Arguments</h4>
+<div class="outline-text-4" id="text-org2e03cf8">
+<div class="org-src-container">
+<pre class="src src-matlab">arguments
+end
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Dehaeze Thomas</p>
+<p class="date">Created: 2020-06-03 mer. 15:51</p>
+</div>
+</body>
+</html>
