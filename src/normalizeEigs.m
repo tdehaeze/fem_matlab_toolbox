@@ -1,3 +1,8 @@
+% Function description
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 function [zn] = normalizeEigs(zm, args)
 % normalizeEigs - Normalize the eigenvectors
 %
@@ -11,11 +16,22 @@ function [zn] = normalizeEigs(zm, args)
 % Outputs:
 %    - zn - Normalized Modal Matrix
 
+% Optional Parameters
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 arguments
     zm
-    args.m double {mustBeNumeric} = 0
-    args.method char {mustBeMember(args.method,{'mass', 'unity'})} = 'mass'
+    args.m      double {mustBeNumeric} = 0
+    args.method char   {mustBeMember(args.method,{'mass', 'unity'})} = 'mass'
 end
+
+% Normalize the Eigen Vectors - Mass Method
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 
 if strcmp(args.method, 'mass')
     if size(args.m) ~= [size(zm,1), size(zm,1)]
@@ -27,6 +43,12 @@ if strcmp(args.method, 'mass')
         zn(:,i) = zm(:,i)/sqrt(zm(:,i)'*args.m*zm(:,i));
     end
 end
+
+% Normalize the Eigen Vectors - Unity Method
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 
 if strcmp(args.method, 'unity')
   zn = zm./max(zm);

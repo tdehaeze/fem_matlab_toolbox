@@ -1,3 +1,8 @@
+% Function description
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 function [zr] = reductionInOut(zn, i_inputs, i_outputs)
 % reductionInOut - Reduce the Modal Matrix to only specified nodes corresponding to Inputs and Ouputs
 %
@@ -11,10 +16,20 @@ function [zr] = reductionInOut(zn, i_inputs, i_outputs)
 % Outputs:
 %    - zr - Reduced Normalized Modal Matrix
 
+% Arguments
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 arguments
     zn
     i_inputs  {mustBeInteger} = 0
     i_outputs {mustBeInteger} = 0
 end
+
+% Size Reduction
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
 
 zr = zn([i_inputs, i_outputs], :);

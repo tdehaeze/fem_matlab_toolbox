@@ -1,3 +1,8 @@
+% Function description
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 function [zm, w] = extractEigs(filename, args)
 % extractEigs -
 %
@@ -17,17 +22,32 @@ function [zm, w] = extractEigs(filename, args)
 %                            - zm((n-1)*j+1:n*j, i) corresponds to the eigenvector for i'th mode and for j'th dir considered
 %    - w  - [m x 1] - Eigenvalues [Hz]
 
+% Optional Parameters
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 arguments
     filename
     args.dirs (6,1) double {mustBeNumericOrLogical}            = ones(6,1)
     args.soft       char   {mustBeMember(args.soft,{'ansys'})} = 'ansys'
 end
 
+% Open the file
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
+
 fid = fopen(filename,'rt');
 
 if fid == -1
     error('Error opening the file');
 end
+
+% Extract Eigenvalues - Ansys
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
 
 if strcmp(args.soft, 'ansys')
     w = [];
@@ -70,5 +90,10 @@ if strcmp(args.soft, 'ansys')
 
     zm = reshape(zm(:, logical([0; args.dirs]), :), size(zm, 1)*sum(args.dirs), size(zm, 3));
 end
+
+% Close the file
+% :PROPERTIES:
+% :UNNUMBERED: t
+% :END:
 
 fclose(fid);

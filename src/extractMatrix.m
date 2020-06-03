@@ -4,7 +4,7 @@ function [M] = extractMatrix(filename)
 % Syntax: [M] = extractMatrix(filename)
 %
 % Inputs:
-  %    - filename - relative or absolute path of the file that contains the Matrix
+%    - filename - relative or absolute path of the file that contains the Matrix
 %
 % Outputs:
 %    - M - Matrix that is contained in the file
