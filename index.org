@@ -71,6 +71,7 @@ First, these information are imported in Matlab, and then are used in Simscape t
 #+end_src
 
 #+begin_src matlab
+  addpath('./src/');
   addpath('examples/cant_beam/');
 #+end_src
 
@@ -179,13 +180,28 @@ exportFig('figs/cant_beam_frf.pdf', 'width', 'wide', 'height', 'tall');
 #+RESULTS:
 [[file:figs/cant_beam_frf.png]]
 
-* Matlab with ANSYS
+* Low Order Dynamical Model from a Finite Element Model
 :PROPERTIES:
 :header-args:matlab+: :tangle examples/cant_beam/cant_beam.m
 :header-args:matlab+: :comments none :mkdirp yes
 :END:
 
 ** Introduction                                                      :ignore:
+Most of the example presented in this section are taken from cite:hatch00_vibrat_matlab_ansys.
+
+The goal is to obtain a low order model from a Finite Element Model.
+
+We suppose here that the eigenvalues and eigenvectors are exported using a Finite Element software.
+
+Once the eigenvalues and eigenvectors are imported, one should choose the inputs and outputs nodes (e.g. where the forces and the displacements are measured) to first reduce the number of eigenvectors.
+
+Damping can then be added to each.
+
+Then, in order to reduce the size of the model, only few modes are included in the model.
+The selection of the modes to keep in the model can be based on the "dc gain" or "peak gain" method depending on the damping.
+
+Finally, the full model and reduced models are compared.
+
 ** Matlab Init                                              :noexport:ignore:
 #+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
   <<matlab-dir>>
@@ -197,23 +213,23 @@ exportFig('figs/cant_beam_frf.pdf', 'width', 'wide', 'height', 'tall');
 
 #+begin_src matlab
   addpath('./src/');
+  addpath('examples/cant_beam_ansys/');
 #+end_src
 
-** Extract values
+** Extract Eigenvalues and Eigenvectors
+The eigenvalues and eigenvectors are extracted.
 #+begin_src matlab
-  [w, zm] = extractEigs('cantbeam30bl.eig', 'dirs', [1 0 0 0 0 0]');
-  % % dir = 3; % UY
-  % [xn, f0] = readEigFile(filename, dir);
+  [xn, f0] = extractEigs('cantbeam30bl.eig', 'dirs', [1 0 0 0 0 0]');
 
-  % n_nodes = size(xn, 1);
-  % n_modes = size(xn, 2);
+  n_nodes = size(xn, 1);
+  n_modes = size(xn, 2);
 #+end_src
 
 ** Define Physical Inputs and Outputs
 First, define the node numbers corresponding to the inputs and outputs
 #+begin_src matlab
-  i_input = 14;
-  i_output = 29;
+  i_input = 14; % middle of the beam
+  i_output = 29; % end of the beam
 #+end_src
 
 ** Define Damping
@@ -222,10 +238,11 @@ We here use uniform damping.
   xi = 0.01;
 #+end_src
 
-** TODO Alternative Definition of the matrix A
-I could define 2x2 sub-matrices each corresponding to a particular mode and then combine them using =blkdiag= command.
-
 ** All Modes Included in the Model
+The state space matrices are created by "inspection".
+Here, we include all the modes.
+
+
 System Matrix - A
 #+begin_src matlab
   Adiag = zeros(2*n_modes,1);
@@ -270,7 +287,11 @@ State Space Model
 #+end_src
 
 ** Simple mode truncation
-Let's plot the frequency of the modes (Figure [[fig:hatch00_cant_beam_modes_freq]]).
+Let see what happens is we simply truncate the number of modes (keeping only the low frequency modes).
+
+The frequency of the modes are shown in Figure [[fig:hatch00_cant_beam_modes_freq]].
+
+The DC gain of each mode is shown in Figure [[fig:hatch00_cant_beam_unsorted_dc_gains]].
 
 #+begin_src matlab :exports none
   figure;
@@ -313,7 +334,7 @@ Let's keep only the first 10 modes.
   f0_t = f0(1:m_max);
 #+end_src
 
-#+begin_src matlab
+#+begin_src matlab :exports none
   Adiag = zeros(2*m_max,1);
   Adiag(2:2:end) = -2*xi.*(2*pi*f0_t);
 
@@ -326,8 +347,7 @@ Let's keep only the first 10 modes.
   A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
 #+end_src
 
-System Matrix - B
-#+begin_src matlab
+#+begin_src matlab :exports none
   B = zeros(2*m_max, length(i_input));
 
   for i = 1:length(i_input)
@@ -339,24 +359,22 @@ System Matrix - B
   end
 #+end_src
 
-System Matrix - C
-#+begin_src matlab
+#+begin_src matlab :exports none
   C = zeros(length(i_output), 2*m_max);
   C(:, 1:2:end) = xn_t(i_output, :);
 #+end_src
 
-System Matrix - D
-#+begin_src matlab
+#+begin_src matlab :exports none
   D = zeros(length(i_output), length(i_input));
 #+end_src
 
-State Space Model
-#+begin_src matlab
+And create the state space model with the kept modes:
+#+begin_src matlab :exports none
   G_t = ss(A, B, C, D);
 #+end_src
 
 ** Modes sorted by their DC gain
-Let's sort the modes by their DC gains and plot their sorted DC gains.
+Let's sort the modes by their DC gains and plot their sorted DC gains (Figure [[fig:hatch00_cant_beam_sorted_dc_gains]]).
 
 #+begin_src matlab
   dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
@@ -388,7 +406,7 @@ Let's keep only the first 10 *sorted* modes.
   f0_s = f0(index_sort(1:m_max));
 #+end_src
 
-#+begin_src matlab
+#+begin_src matlab :exports none
   Adiag = zeros(2*m_max,1);
   Adiag(2:2:end) = -2*xi.*(2*pi*f0_s);
 
@@ -401,8 +419,7 @@ Let's keep only the first 10 *sorted* modes.
   A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
 #+end_src
 
-System Matrix - B
-#+begin_src matlab
+#+begin_src matlab :exports none
   B = zeros(2*m_max, length(i_input));
 
   for i = 1:length(i_input)
@@ -414,25 +431,29 @@ System Matrix - B
   end
 #+end_src
 
-System Matrix - C
-#+begin_src matlab
+#+begin_src matlab :exports none
   C = zeros(length(i_output), 2*m_max);
   C(:, 1:2:end) = xn_s(i_output, :);
 #+end_src
 
-System Matrix - D
-#+begin_src matlab
+#+begin_src matlab :exports none
   D = zeros(length(i_output), length(i_input));
 #+end_src
 
-State Space Model
+And create the state space model with the kept modes:
 #+begin_src matlab
   G_s = ss(A, B, C, D);
 #+end_src
 
-
 ** Comparison
-#+begin_src matlab
+The following models are compared on Figure [[fig:cant_beam_comp_reduc_techniques]]:
+- full model containing all the modes
+- the truncated model containing only the low frequency modes
+- the model where modes are sorted based on DC gain before selection
+
+One can see that with the same number of modes, the sorted model gives much better results than the truncated one.
+
+#+begin_src matlab :exports none
   freqs = logspace(0, 5, 1000);
 
   figure;
@@ -445,13 +466,26 @@ State Space Model
   legend();
 #+end_src
 
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/cant_beam_comp_reduc_techniques.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:cant_beam_comp_reduc_techniques
+#+caption: Comparison of the reduction techniques
+#+RESULTS:
+[[file:figs/cant_beam_comp_reduc_techniques.png]]
+
 ** Effect of the Individual Modes
+To see why it is better to sort the modes prior mode reduction, we can look at the contribution of the individual modes as shown in Figure [[fig:cant_beam_individial_modes]].
+
+One can see that some modes have no effect on the dynamics for the selected inputs and outputs.
+
 #+begin_src matlab
   freqs = logspace(0, 4, 1000);
 
   figure;
   hold on;
-  for mode_i = 1:6
+  for mode_i = 1:10
       A = zeros(2);
       A(2,2) = -2*xi.*(2*pi*f0(mode_i));
       A(1,2) = 1;
@@ -470,20 +504,36 @@ State Space Model
        'DisplayName', 'Full');
   set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
   ylabel('Amplitude'); xlabel('Frequency [Hz]');
-  legend();
+  ylim([1e-9, 1e2]);
+  legend('location', 'southwest');
 #+end_src
 
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/cant_beam_individial_modes.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:cant_beam_individial_modes
+#+caption: Contribution of the individual modes on the dynamics
+#+RESULTS:
+[[file:figs/cant_beam_individial_modes.png]]
 
 ** Non-Uniform Damping
 *** Definition of the Damping
-If we want to use Rayleigh damping:
+Let's say we want to use Rayleigh damping:
+\begin{equation}
+  \xi_i = \frac{a + b \omega_i^2}{\omega_i}
+\end{equation}
+
+We define the parameters on Matlab:
 #+begin_src matlab
   a = 1e-2;
   b = 1e-6;
   xi = (a + b * (2*pi*f0).^2)./(2*pi*f0);
 #+end_src
 
-*** System Creation
+*** State Space Model
+And we can create the state space model.
+
 System Matrix - A
 #+begin_src matlab
   Adiag = zeros(2*n_modes,1);
@@ -527,8 +577,11 @@ State Space Model
   G_d = ss(A, B, C, D);
 #+end_src
 
-*** Comparison with Uniform Damping
-#+begin_src matlab
+*** Obtained Dynamics
+
+And we compare the obtained dynamics when using Uniform Damping (Figure [[fig:cant_beam_comp_unif_non_unif_damp]]).
+
+#+begin_src matlab :exports none
   freqs = logspace(0, 5, 1000);
 
   figure;
@@ -540,8 +593,18 @@ State Space Model
   legend();
 #+end_src
 
-*** Modes sorted by their peak gain
-Let's sort the modes by their peak gains and plot their sorted peak gains.
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/cant_beam_comp_unif_non_unif_damp.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:cant_beam_comp_unif_non_unif_damp
+#+caption: Comparison of the obtained dynamics with uniform damping and non-uniform damping
+#+RESULTS:
+[[file:figs/cant_beam_comp_unif_non_unif_damp.png]]
+
+*** Sort Modes based on their peak gain
+The modes are sorted by their peak gain.
+The obtained sorted peak gains for each mode are shown in figure [[fig:cant_beam_peak_gains_sorted]].
 
 #+begin_src matlab
   dc_gain = abs(xn(i_input, :).*xn(i_output, :))./(2*pi*f0).^2;
@@ -557,14 +620,27 @@ Let's sort the modes by their peak gains and plot their sorted peak gains.
   set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
 #+end_src
 
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/cant_beam_peak_gains_sorted.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:cant_beam_peak_gains_sorted
+#+caption: Sorted Peak Gains
+#+RESULTS:
+[[file:figs/cant_beam_peak_gains_sorted.png]]
+
+*** Model Reduction
 Let's keep only the first 10 *sorted* modes.
+
 #+begin_src matlab
   m_max = 10;
 
   xn_s = xn(:, index_sort(1:m_max));
   f0_s = f0(index_sort(1:m_max));
-  xi_x = xi(index_sort(1:m_max));
+  xi_s = xi(index_sort(1:m_max));
 #+end_src
+
+And we create the state space matrices.
 
 #+begin_src matlab
   Adiag = zeros(2*m_max,1);
@@ -579,7 +655,6 @@ Let's keep only the first 10 *sorted* modes.
   A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
 #+end_src
 
-System Matrix - B
 #+begin_src matlab
   B = zeros(2*m_max, length(i_input));
 
@@ -592,23 +667,21 @@ System Matrix - B
   end
 #+end_src
 
-System Matrix - C
 #+begin_src matlab
   C = zeros(length(i_output), 2*m_max);
   C(:, 1:2:end) = xn_s(i_output, :);
 #+end_src
 
-System Matrix - D
 #+begin_src matlab
   D = zeros(length(i_output), length(i_input));
 #+end_src
 
-State Space Model
+And finally the reduced State Space Model is created and compared with the full model in Figure [[fig:cant_beam_non_uniform_damp_reduced_dynamics]].
 #+begin_src matlab
   G_p = ss(A, B, C, D);
 #+end_src
 
-#+begin_src matlab
+#+begin_src matlab :exports none
   freqs = logspace(0, 5, 1000);
 
   figure;
@@ -620,7 +693,23 @@ State Space Model
   ylabel('Amplitude'); xlabel('Frequency [Hz]');
   legend();
 #+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/cant_beam_non_uniform_damp_reduced_dynamics.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:cant_beam_non_uniform_damp_reduced_dynamics
+#+caption: Comparison of the full and reduced model for the non-uniform damping case
+#+RESULTS:
+[[file:figs/cant_beam_non_uniform_damp_reduced_dynamics.png]]
+
+
 ** MIMO System
+*** Introduction                                                    :ignore:
+When using multiple inputs and multiple outputs, one cannot simply choose the modes to keep based on their gains because this gain depends on the inputs and outputs chosen.
+
+In such case, *balancing reduction* should be used.
+
 *** Inputs and Outputs
 Let's choose two inputs and two outputs.
 #+begin_src matlab
@@ -628,8 +717,9 @@ Let's choose two inputs and two outputs.
   i_output = [14, 31];
 #+end_src
 
-*** System Matrices
-System Matrix - A
+*** Full Model
+The state space matrices are created by inspection.
+
 #+begin_src matlab
   Adiag = zeros(2*n_modes,1);
   Adiag(2:2:end) = -2*xi.*(2*pi*f0);
@@ -643,7 +733,6 @@ System Matrix - A
   A = diag(Adiag) + diag(Adiagsup, 1) + diag(Adiaginf, -1);
 #+end_src
 
-System Matrix - B
 #+begin_src matlab
   B = zeros(2*n_modes, length(i_input));
 
@@ -656,18 +745,16 @@ System Matrix - B
   end
 #+end_src
 
-System Matrix - C
 #+begin_src matlab
   C = zeros(length(i_output), 2*n_modes);
   C(:, 1:2:end) = xn(i_output, :);
 #+end_src
 
-System Matrix - D
 #+begin_src matlab
   D = zeros(length(i_output), length(i_input));
 #+end_src
 
-State Space Model
+And the State Space Model is created.
 #+begin_src matlab
   G_m = ss(A, B, C, D);
 #+end_src
@@ -675,34 +762,14 @@ State Space Model
 *** Balancing Reduction
 First, we have to make sure that the rigid body mode is not included in the system (here it is not).
 
-Then, we compute the controllability and observability gramians.
+Then, we compute the *controllability and observability gramians*.
 #+begin_src matlab
   wc = gram(G_m, 'c');
   wo = gram(G_m, 'o');
 #+end_src
 
-And we plot the diagonal terms
-#+begin_src matlab :exports none
-  figure;
-  hold on;
-  plot(1:size(A,1), diag(wc), 'x', ...
-       'DisplayName', '$w_c$');
-  plot(1:size(A,1), diag(wo), 'o', ...
-       'DisplayName', '$w_o$');
-  hold off;
-  set(gca, 'XScale', 'lin'); set(gca, 'YScale', 'log');
-  ylabel('Amplitude'); xlabel('States');
-  legend();
-#+end_src
-
-#+begin_src matlab :tangle no :exports results :results file replace
-exportFig('figs/hatch00_gramians.pdf', 'width', 'wide', 'height', 'tall');
-#+end_src
-
-#+name: fig:hatch00_gramians
-#+caption: Observability and Controllability Gramians
-#+RESULTS:
-[[file:figs/hatch00_gramians.png]]
+And we plot the diagonal terms of the controllability and observability gramians (Figure [[fig:cant_beam_gramians]]).
+The states representing the position and velocity are separated.
 
 #+begin_src matlab :exports none
   figure;
@@ -732,6 +799,15 @@ exportFig('figs/hatch00_gramians.pdf', 'width', 'wide', 'height', 'tall');
   legend();
 #+end_src
 
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/cant_beam_gramians.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:cant_beam_gramians
+#+caption: Diagonal values of the Observability and Controllability Gramians
+#+RESULTS:
+[[file:figs/cant_beam_gramians.png]]
+
 We use =balreal= to rank oscillatory states.
 #+begin_quote
     [SYSB,G] = BALREAL(SYS) computes a balanced state-space realization for
@@ -747,6 +823,8 @@ We use =balreal= to rank oscillatory states.
   [G_b, G, T, Ti] = balreal(G_m);
 #+end_src
 
+The diagonal values of the two gramians are shown in Figure [[fig:cant_beam_gramian_balanced]].
+
 #+begin_src matlab :exports none
   figure;
   hold on;
@@ -757,17 +835,17 @@ We use =balreal= to rank oscillatory states.
 #+end_src
 
 #+begin_src matlab :tangle no :exports results :results file replace
-  exportFig('figs/hatch00_cant_beam_gramian_balanced.pdf', 'width', 'wide', 'height', 'tall');
+  exportFig('figs/cant_beam_gramian_balanced.pdf', 'width', 'wide', 'height', 'tall');
 #+end_src
 
-#+name: fig:hatch00_cant_beam_gramian_balanced
+#+name: fig:cant_beam_gramian_balanced
 #+caption: Sorted values of the Gramian of the balanced realization
 #+RESULTS:
-[[file:figs/hatch00_cant_beam_gramian_balanced.png]]
+[[file:figs/cant_beam_gramian_balanced.png]]
 
 Now we can choose the number of states to keep.
 #+begin_src matlab
-  n_states_b = 20;
+  n_states_b = 10;
 #+end_src
 
 We now use =modred= to define reduced order oscillatory system using =mathdc= or =truncate= option.
@@ -787,15 +865,60 @@ We now use =modred= to define reduced order oscillatory system using =mathdc= or
 If needed, the rigid body mode should be added to the reduced system.
 
 And other option is to specify the minimum value of the gramians diagonal elements for the modes to keep.
-#+begin_src matlab
+#+begin_src matlab :eval no
   G_min = 1e-4;
   G_br = modred(G_b, G<G_min, 'truncate');
 #+end_src
 
-#+begin_src matlab
+The obtained reduced dynamics is shown in Figure [[fig:cant_beam_mimo_reduction]].
+
+#+begin_src matlab :exports none
+  freqs = logspace(0, 4, 1000);
+
   figure;
-  bodemag(G_br, G_m)
+
+  ax1 = subplot(2, 2, 1);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_br(1, 1), freqs, 'Hz'))));
+  plot(freqs, abs(squeeze(freqresp(G_m( 1, 1), freqs, 'Hz'))));
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  xlabel('Frequency [Hz]'); ylabel('$\left|Z_1/F_1\right|$');
+
+  ax2 = subplot(2, 2, 2);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_br(1, 2), freqs, 'Hz'))));
+  plot(freqs, abs(squeeze(freqresp(G_m( 1, 2), freqs, 'Hz'))));
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  xlabel('Frequency [Hz]'); ylabel('$\left|Z_1/F_2\right|$');
+
+  ax3 = subplot(2, 2, 3);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_br(2, 1), freqs, 'Hz'))));
+  plot(freqs, abs(squeeze(freqresp(G_m( 2, 1), freqs, 'Hz'))));
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  xlabel('Frequency [Hz]'); ylabel('$\left|Z_2/F_1\right|$');
+
+  ax4 = subplot(2, 2, 4);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G_br(2, 2), freqs, 'Hz'))), 'DisplayName', 'Balanced Red.');
+  plot(freqs, abs(squeeze(freqresp(G_m( 2, 2), freqs, 'Hz'))), 'DisplayName', 'Full');
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  xlabel('Frequency [Hz]'); ylabel('$\left|Z_2/F_2\right|$');
+  legend('location', 'northeast');
 #+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/cant_beam_mimo_reduction.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:cant_beam_mimo_reduction
+#+caption: Balanced reduction on the MIMO system
+#+RESULTS:
+[[file:figs/cant_beam_mimo_reduction.png]]
 
 * Functions
 <<sec:functions>>
