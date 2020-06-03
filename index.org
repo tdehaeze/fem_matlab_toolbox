@@ -920,6 +920,172 @@ The obtained reduced dynamics is shown in Figure [[fig:cant_beam_mimo_reduction]
 #+RESULTS:
 [[file:figs/cant_beam_mimo_reduction.png]]
 
+* Piezoelectric Stack
+** Matlab Init                                             :noexport:ignore:
+#+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
+<<matlab-dir>>
+#+end_src
+
+#+begin_src matlab :exports none :results silent :noweb yes
+<<matlab-init>>
+#+end_src
+
+#+begin_src matlab
+  addpath('./src/');
+  addpath('examples/piezo_stack/');
+#+end_src
+
+** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
+We first extract the stiffness matrix.
+#+begin_src matlab
+  K = extractMatrix('piezo_stack_K.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no
+  data2orgtable(K(1:10, 1:10), {}, {}, ' %.1e ');
+#+end_src
+
+#+caption: First 10x10 elements of the Stiffness matrix
+#+RESULTS:
+|  200000000.0 |         0.0 |         0.0 |      0.0 |       0.0 |       0.0 | -200000000.0 |         0.0 |         0.0 |      0.0 |
+|          0.0 |  13000000.0 |         0.0 |      0.0 |       0.0 |  230000.0 |          0.0 | -13000000.0 |         0.0 |      0.0 |
+|          0.0 |         0.0 |  13000000.0 |  8.3e-06 | -230000.0 |       0.0 |          0.0 |         0.0 | -13000000.0 |  3.7e-06 |
+|          0.0 |         0.0 |     8.3e-06 |   1100.0 |  -4.1e-08 |       0.0 |          0.0 |         0.0 |     3.7e-06 |  -1100.0 |
+|          0.0 |         0.0 |   -230000.0 | -4.1e-08 |    5700.0 |       0.0 |          0.0 |         0.0 |    230000.0 | -2.9e-08 |
+|          0.0 |    230000.0 |         0.0 |      0.0 |       0.0 |    5700.0 |          0.0 |   -230000.0 |         0.0 |      0.0 |
+| -200000000.0 |         0.0 |         0.0 |      0.0 |       0.0 |       0.0 |  400000000.0 |         0.0 |         0.0 |      0.0 |
+|          0.0 | -13000000.0 |         0.0 |      0.0 |       0.0 | -230000.0 |          0.0 |  26000000.0 |         0.0 |      0.0 |
+|          0.0 |         0.0 | -13000000.0 |  3.7e-06 |  230000.0 |       0.0 |          0.0 |         0.0 |  26000000.0 |  1.7e-05 |
+|          0.0 |         0.0 |     3.7e-06 |  -1100.0 |  -2.9e-08 |       0.0 |          0.0 |         0.0 |     1.7e-05 |   2200.0 |
+
+#+begin_src matlab
+  M = extractMatrix('piezo_stack_M.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no
+  data2orgtable(M(1:10, 1:10), {}, {}, ' %.1e ');
+#+end_src
+
+#+caption: First 10x10 elements of the Mass matrix
+#+RESULTS:
+| 0.0091 |     0.0 |      0.0 |      0.0 |      0.0 |     0.0 | 0.0046 |     0.0 |      0.0 |      0.0 |
+|    0.0 |    0.01 |      0.0 |      0.0 |      0.0 | 4.8e-05 |    0.0 |  0.0036 |      0.0 |      0.0 |
+|    0.0 |     0.0 |     0.01 | -6.3e-16 | -4.8e-05 |     0.0 |    0.0 |     0.0 |   0.0036 | -5.4e-16 |
+|    0.0 |     0.0 | -6.3e-16 |  1.5e-07 |  4.4e-18 |     0.0 |    0.0 |     0.0 | -5.4e-16 |  7.6e-08 |
+|    0.0 |     0.0 | -4.8e-05 |  4.4e-18 |  3.3e-07 |     0.0 |    0.0 |     0.0 | -3.2e-05 |  4.1e-18 |
+|    0.0 | 4.8e-05 |      0.0 |      0.0 |      0.0 | 3.3e-07 |    0.0 | 3.2e-05 |      0.0 |      0.0 |
+| 0.0046 |     0.0 |      0.0 |      0.0 |      0.0 |     0.0 |  0.018 |     0.0 |      0.0 |      0.0 |
+|    0.0 |  0.0036 |      0.0 |      0.0 |      0.0 | 3.2e-05 |    0.0 |    0.02 |      0.0 |      0.0 |
+|    0.0 |     0.0 |   0.0036 | -5.4e-16 | -3.2e-05 |     0.0 |    0.0 |     0.0 |     0.02 | -1.3e-15 |
+|    0.0 |     0.0 | -5.4e-16 |  7.6e-08 |  4.1e-18 |     0.0 |    0.0 |     0.0 | -1.3e-15 |    3e-07 |
+
+Then, we extract the coordinates of the interface nodes.
+#+begin_src matlab
+  [int_xyz, int_i] = extractNodes('piezo_stack.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
+  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x [m]', 'y [m]', 'z [m]'}, ' %.0e ');
+#+end_src
+
+#+caption: Coordinates of the interface nodes
+#+RESULTS:
+| Node Number | x [m] | y [m] | z [m] |
+|-------------+-------+-------+-------|
+|      1000.0 |   0.0 |   0.0 |   0.0 |
+|      1000.0 |  0.04 |   0.0 |   0.0 |
+|      1000.0 |  0.07 |   0.0 |   0.0 |
+
+Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
+
+** Identification of the Dynamics
+The flexible element is imported using the =Reduced Order Flexible Solid= simscape block.
+
+To model the actuator, an =Internal Force= block is added between the first and second nodes.
+To model the sensors, a =Relative Motion Sensor= block is added between the second and the third nodes.
+
+Two masses are fixed at the ends of the piezo-electric stack actuator.
+
+#+begin_src matlab :exports none
+  open('piezo_stack');
+#+end_src
+
+We first set the mass to be zero.
+#+begin_src matlab
+  m = 0;
+#+end_src
+
+The dynamics is identified from the applied force to the measured relative displacement.
+
+#+begin_src matlab
+  %% Name of the Simulink File
+  mdl = 'piezo_stack';
+
+  %% Input/Output definition
+  clear io; io_i = 1;
+  io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
+  io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
+
+  G = linearize(mdl, io);
+#+end_src
+
+Then, we add 10Kg of mass:
+#+begin_src matlab
+  m = 10;
+#+end_src
+
+And the dynamics is identified.
+
+The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
+
+#+begin_src matlab :exports none
+  %% Name of the Simulink File
+  mdl = 'piezo_stack';
+
+  %% Input/Output definition
+  clear io; io_i = 1;
+  io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
+  io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
+
+  Gm = linearize(mdl, io);
+#+end_src
+
+#+begin_src matlab :exports none
+  freqs = logspace(2, 6, 1000);
+
+  figure;
+
+  ax1 = subplot(2,1,1);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
+  plot(freqs, abs(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); set(gca, 'XTickLabel',[]);
+  hold off;
+
+  ax2 = subplot(2,1,2);
+  hold on;
+  plot(freqs, 180/pi*angle(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'lin');
+  yticks(-180:90:180);
+  ylim([-180 180]);
+  xlabel('Frequency [Hz]'); ylabel('Phase [deg]');
+  hold off;
+  linkaxes([ax1,ax2],'x');
+  xlim([freqs(1), freqs(end)]);
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+  exportFig('figs/piezo_stack_frf.pdf', 'width', 'tall', 'height', 'tall');
+#+end_src
+
+#+name: fig:piezo_stack_frf
+#+caption: Identify transfer function from a vertical force applied at the middle point of the cantilever beam to its vertical displacement
+#+RESULTS:
+[[file:figs/piezo_stack_frf.png]]
+
 * Functions
 <<sec:functions>>
 :PROPERTIES:
