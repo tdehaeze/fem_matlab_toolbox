@@ -1,19 +1,21 @@
-function [w, zm] = extractEigs(filename, args)
+function [zm, w] = extractEigs(filename, args)
 % extractEigs -
 %
-% Syntax: [w, zm] = extractEigs(filename, args)
+% Syntax: [zm, w] = extractEigs(filename, args)
 %
 % Inputs:
 %    - filename - relative or absolute path of the file that contains the eigenvectors and eigenvalues
 %    - args - Optional parameters:
-%        - 'dirs' - [6 x 1] - ones(6,1) (default)
-%                           - Vectors with 0 and 1 identifying directions to include in the modal matrix
-%                           - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
-%        - 'soft' - 'ansys' (default) - Software used for the FEM
+%        - dirs - [6 x 1] - ones(6,1) (default)
+%                          - Vectors with 0 and 1 identifying directions to include in the modal matrix
+%                          - This corresponds to [Ux, Uy, Uz, Rx, Ry, Rz]
+%        - soft - 'ansys' (default) - Software used for the FEM
 %
 % Outputs:
+%    - zm - [(n x dofs) x m] - Modal Matrix containing the eigenvectors
+%                            - zm(1:n, i) corresponds to the eigenvector for mode i and for first dir considered
+%                            - zm((n-1)*j+1:n*j, i) corresponds to the eigenvector for i'th mode and for j'th dir considered
 %    - w  - [m x 1] - Eigenvalues [Hz]
-%    - zm - [n x m] - Modal Matrix containing the eigenvectors
 
 arguments
     filename
@@ -47,7 +49,7 @@ if strcmp(args.soft, 'ansys')
 
         % Lines containing the frequency of the modes
         if contains(nextline, 'FREQ=')
-            w = [w; sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
+            w = [w, sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
         end
 
         % Start of the eigenvectors
@@ -66,7 +68,7 @@ if strcmp(args.soft, 'ansys')
         end
     end
 
-    zm = reshape(zm(:, logical([0; args.dirs]), :), [], mode_num);
+    zm = reshape(zm(:, logical([0; args.dirs]), :), size(zm, 1)*sum(args.dirs), size(zm, 3));
 end
 
 fclose(fid);

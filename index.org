@@ -38,6 +38,127 @@
 #+PROPERTY: header-args:latex+ :output-dir figs
 :END:
 
+* Import Flexible Elements in Simscape
+:PROPERTIES:
+:header-args:matlab+: :tangle examples/cant_beam/cant_beam.m
+:header-args:matlab+: :comments none :mkdirp yes
+:END:
+
+** Matlab Init                                              :noexport:ignore:
+#+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
+  <<matlab-dir>>
+#+end_src
+
+#+begin_src matlab :exports none :results silent :noweb yes
+  <<matlab-init>>
+#+end_src
+
+#+begin_src matlab
+  addpath('examples/cant_beam/');
+#+end_src
+
+** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
+We first extract the stiffness matrix.
+#+begin_src matlab
+  K = extractMatrix('cant_beam_K.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no
+  data2orgtable(K(1:10, 1:10), {}, {}, ' %.1e ');
+#+end_src
+
+#+RESULTS:
+|  42000.0 |    0.0 |     0.0 |       0.0 |       0.0 |       0.0 | -42000.0 |     0.0 |    0.0 |       0.0 |
+|      0.0 |   17.0 |     0.0 |       0.0 |       0.0 |    4200.0 |      0.0 |   -17.0 |    0.0 |       0.0 |
+|      0.0 |    0.0 |    17.0 |       0.0 |   -4200.0 |       0.0 |      0.0 |     0.0 |  -17.0 |       0.0 |
+|      0.0 |    0.0 |     0.0 |  230000.0 |       0.0 |       0.0 |      0.0 |     0.0 |    0.0 | -230000.0 |
+|      0.0 |    0.0 | -4200.0 |       0.0 | 1400000.0 |       0.0 |      0.0 |     0.0 | 4200.0 |       0.0 |
+|      0.0 | 4200.0 |     0.0 |       0.0 |       0.0 | 1400000.0 |      0.0 | -4200.0 |    0.0 |       0.0 |
+| -42000.0 |    0.0 |     0.0 |       0.0 |       0.0 |       0.0 |  84000.0 |     0.0 |    0.0 |       0.0 |
+|      0.0 |  -17.0 |     0.0 |       0.0 |       0.0 |   -4200.0 |      0.0 |    34.0 |    0.0 |       0.0 |
+|      0.0 |    0.0 |   -17.0 |       0.0 |    4200.0 |       0.0 |      0.0 |     0.0 |   34.0 |       0.0 |
+|      0.0 |    0.0 |     0.0 | -230000.0 |       0.0 |       0.0 |      0.0 |     0.0 |    0.0 |  460000.0 |
+
+#+begin_src matlab
+  M = extractMatrix('cant_beam_M.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no
+  data2orgtable(M(1:10, 1:10), {}, {}, ' %.1e ');
+#+end_src
+
+#+RESULTS:
+| 0.00013 |     0.0 |     0.0 |    0.0 |    0.0 |   0.0 | 6.5e-05 |     0.0 |     0.0 |    0.0 |
+|     0.0 | 0.00014 |     0.0 |    0.0 |    0.0 |  0.01 |     0.0 |   5e-05 |     0.0 |    0.0 |
+|     0.0 |     0.0 | 0.00014 |    0.0 |  -0.01 |   0.0 |     0.0 |     0.0 |   5e-05 |    0.0 |
+|     0.0 |     0.0 |     0.0 | 0.0022 |    0.0 |   0.0 |     0.0 |     0.0 |     0.0 | 0.0011 |
+|     0.0 |     0.0 |   -0.01 |    0.0 |   0.93 |   0.0 |     0.0 |     0.0 |  -0.006 |    0.0 |
+|     0.0 |    0.01 |     0.0 |    0.0 |    0.0 |  0.93 |     0.0 |   0.006 |     0.0 |    0.0 |
+| 6.5e-05 |     0.0 |     0.0 |    0.0 |    0.0 |   0.0 | 0.00026 |     0.0 |     0.0 |    0.0 |
+|     0.0 |   5e-05 |     0.0 |    0.0 |    0.0 | 0.006 |     0.0 | 0.00029 |     0.0 |    0.0 |
+|     0.0 |     0.0 |   5e-05 |    0.0 | -0.006 |   0.0 |     0.0 |     0.0 | 0.00029 |    0.0 |
+|     0.0 |     0.0 |     0.0 | 0.0011 |    0.0 |   0.0 |     0.0 |     0.0 |     0.0 | 0.0043 |
+
+Then, we extract the coordinates of the interface nodes.
+#+begin_src matlab
+  [int_xyz, int_i] = extractNodes('cant_beam.txt');
+#+end_src
+
+#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
+  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x', 'y', 'z'}, ' %.0f ');
+#+end_src
+
+#+RESULTS:
+| Node Number |    x | y | z |
+|-------------+------+---+---|
+|           1 |    0 | 0 | 0 |
+|           6 |  500 | 0 | 0 |
+|          22 | 1000 | 0 | 0 |
+
+Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
+
+** Identification of the Dynamics
+The flexible element is imported using the =Reduced Order Flexible Solid= simscape block.
+
+The beginning of the cantilever beam is fixed to the World frame, a force actuator is added in the z direction on the middle node, and a z-displacement sensor is added at the end of the beam.
+
+#+begin_src matlab :exports none
+  open('cant_beam');
+#+end_src
+
+The dynamics is identified from the applied force to the measured displacement (Figure [[fig:cant_beam_frf]]).
+
+#+begin_src matlab
+  %% Name of the Simulink File
+  mdl = 'cant_beam';
+
+  %% Input/Output definition
+  clear io; io_i = 1;
+  io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
+  io(io_i) = linio([mdl, '/z'], 1, 'openoutput'); io_i = io_i + 1;
+
+  G = linearize(mdl, io);
+#+end_src
+
+#+begin_src matlab :exports none
+  freqs = logspace(-2, 4, 1000);
+
+  figure;
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); xlabel('Frequency [Hz]');
+#+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/cant_beam_frf.pdf', 'width', 'wide', 'height', 'tall');
+#+end_src
+
+#+name: fig:cant_beam_frf
+#+caption: Identify transfer function from a vertical force applied at the middle point of the cantilever beam to its vertical displacement
+#+RESULTS:
+[[file:figs/cant_beam_frf.png]]
+
 * Matlab with ANSYS
 ** Matlab Init                                              :noexport:ignore:
 #+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
@@ -655,6 +776,219 @@ And other option is to specify the minimum value of the gramians diagonal elemen
 :header-args:matlab+: :comments none :mkdirp yes :eval no
 :END:
 
+** =extractMatrix=: Extract Mass/Stiffness matrices
+:PROPERTIES:
+:header-args:matlab+: :tangle src/extractMatrix.m
+:header-args:matlab+: :comments none :mkdirp yes :eval no
+:END:
+<<sec:extractMatrix>>
+
+This Matlab function is accessible [[file:src/extractMatrix.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  function [M] = extractMatrix(filename)
+  % extractMatrix -
+  %
+  % Syntax: [M] = extractMatrix(filename)
+  %
+  % Inputs:
+  %    - filename - relative or absolute path of the file that contains the Matrix
+  %
+  % Outputs:
+  %    - M - Matrix that is contained in the file
+#+end_src
+
+*** Optional Parameters
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+      filename
+  end
+#+end_src
+
+
+*** Read the file
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  str = fileread(filename);
+#+end_src
+
+*** Extract the Matrix
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  str = regexprep(str,'\s+','');
+
+  parts = regexp(str, '\[(?<row>\d+),(?<col>\d+)\]:(?<val>[^\[]+)', 'names');
+#+end_src
+
+Get the number of column and rows
+#+begin_src matlab
+  row = cellfun(@str2double, {parts.row}, 'UniformOutput', true);
+
+  col = cellfun(@str2double, {parts.col}, 'UniformOutput', true);
+#+end_src
+
+Get the values of the matrix
+#+begin_src matlab
+  val = cellfun(@str2double, {parts.val}, 'UniformOutput', true);
+#+end_src
+
+Get the size of the matrix
+#+begin_src matlab
+  sz = [max(row), max(col)];
+#+end_src
+
+Create the Matrix with the correct size
+#+begin_src matlab
+  M = zeros(sz);
+#+end_src
+
+Get matrix position corresponding to the values.
+#+begin_src matlab
+  ix = sub2ind(sz, row, col);
+#+end_src
+
+Finally, data are assigned.
+#+begin_src matlab
+  M(ix)= val;
+#+end_src
+
+** =extractNodes=: Extract Nodes positions and Interfaces DoFs
+:PROPERTIES:
+:header-args:matlab+: :tangle src/extractNodes.m
+:header-args:matlab+: :comments none :mkdirp yes :eval no
+:END:
+<<sec:extractNodes>>
+
+This Matlab function is accessible [[file:src/extractNodes.m][here]].
+
+*** Function description
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  function [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes(filename)
+  % extractNodes -
+  %
+  % Syntax: [n_xyz, nodes] = extractNodes(filename)
+  %
+  % Inputs:
+  %    - filename - relative or absolute path of the file that contains the Matrix
+  %
+  % Outputs:
+  %    - n_xyz -
+  %    - nodes - table containing the node numbers and corresponding dof of the interfaced DoFs
+#+end_src
+
+*** Optional Parameters
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  arguments
+      filename
+  end
+#+end_src
+
+
+*** Read the file
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  fid = fopen(filename,'rt');
+
+  if fid == -1
+      error('Error opening the file');
+  end
+#+end_src
+
+*** Extract Nodes
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  n_xyz = []; % Contains nodes coordinates
+  n_i = []; % Contains nodes indices
+
+  while 1
+      % Read a line
+      nextline = fgetl(fid);
+
+      % End of the file
+      if ~isstr(nextline), break, end
+
+      % Line just before the list of nodes coordinates
+      if contains(nextline, 'NODE') && ...
+              contains(nextline, 'X') && ...
+              contains(nextline, 'Y') && ...
+              contains(nextline, 'Z')
+
+          while 1
+              nextline = fgetl(fid);
+
+              c = sscanf(nextline, ' %f');
+
+              if isempty(c), break, end
+
+              n_xyz = [n_xyz; c(2:end)'];
+              n_i = [n_i; c(1)];
+          end
+      end
+
+      % Line just before the list of node DOF
+      if contains(nextline, 'NODE DOF')
+          n_num = []; % Contains node numbers
+          n_dof = {}; % Contains node directions
+
+          while 1
+              nextline = fgetl(fid);
+
+              if nextline < 0, break, end
+
+              c = sscanf(nextline, ' %d %s');
+
+              if isempty(c), break, end
+
+              n_num = [n_num; c(1)];
+
+              n_dof{length(n_dof)+1} = char(c(2:end)');
+          end
+
+          nodes = table(n_num, string(n_dof'), 'VariableNames', {'node_i', 'node_dof'});
+      end
+  end
+#+end_src
+
+*** Close the file
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  fclose(fid);
+#+end_src
+
+*** Get XYZ coordinates of the interface nodes
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+#+begin_src matlab
+  int_i = unique(nodes.('node_i')); % indices of interface nodes
+
+  % Extract XYZ coordinates of only the interface nodes
+  int_xyz = n_xyz(logical(sum(n_i.*ones(1, length(int_i)) == int_i', 2)), :);
+#+end_src
+
 ** =extractEigs=: Extract Eigen Values and Eigen Vectors
 :PROPERTIES:
 :header-args:matlab+: :tangle src/extractEigs.m
@@ -668,10 +1002,10 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
 :UNNUMBERED: t
 :END:
 #+begin_src matlab
-  function [w, zm] = extractEigs(filename, args)
+  function [zm, w] = extractEigs(filename, args)
   % extractEigs -
   %
-  % Syntax: [w, zm] = extractEigs(filename, args)
+  % Syntax: [zm, w] = extractEigs(filename, args)
   %
   % Inputs:
   %    - filename - relative or absolute path of the file that contains the eigenvectors and eigenvalues
@@ -682,10 +1016,10 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
   %        - soft - 'ansys' (default) - Software used for the FEM
   %
   % Outputs:
-  %    - w  - [m x 1] - Eigenvalues [Hz]
   %    - zm - [(n x dofs) x m] - Modal Matrix containing the eigenvectors
   %                            - zm(1:n, i) corresponds to the eigenvector for mode i and for first dir considered
   %                            - zm((n-1)*j+1:n*j, i) corresponds to the eigenvector for i'th mode and for j'th dir considered
+  %    - w  - [m x 1] - Eigenvalues [Hz]
 #+end_src
 
 *** Optional Parameters
@@ -737,7 +1071,7 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
 
           % Lines containing the frequency of the modes
           if contains(nextline, 'FREQ=')
-              w = [w; sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
+              w = [w, sscanf(nextline, ' FREQ= %f LOAD CASE= %*f')];
           end
 
           % Start of the eigenvectors
@@ -756,7 +1090,7 @@ This Matlab function is accessible [[file:src/extractEigs.m][here]].
           end
       end
 
-      zm = reshape(zm(:, logical([0; args.dirs]), :), [], mode_num);
+      zm = reshape(zm(:, logical([0; args.dirs]), :), size(zm, 1)*sum(args.dirs), size(zm, 3));
   end
 #+end_src
 
