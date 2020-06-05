@@ -1063,7 +1063,7 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
 #+end_src
 
 #+begin_src matlab :exports none
-  freqs = logspace(2, 6, 1000);
+  freqs = logspace(3, 6, 1000);
 
   figure;
 
@@ -1237,7 +1237,7 @@ And the dynamics is identified.
 #+end_src
 
 #+begin_src matlab :exports none
-  freqs = logspace(2, 6, 1000);
+  freqs = logspace(3, 6, 1000);
 
   figure;
 
