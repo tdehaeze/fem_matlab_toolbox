@@ -920,7 +920,7 @@ The obtained reduced dynamics is shown in Figure [[fig:cant_beam_mimo_reduction]
 #+RESULTS:
 [[file:figs/cant_beam_mimo_reduction.png]]
 
-* Piezoelectric Stack
+* Piezoelectric Stack Actuator / Sensor
 :PROPERTIES:
 :header-args:matlab+: :tangle examples/piezo_stack/piezo_stack.m
 :header-args:matlab+: :comments none :mkdirp yes
@@ -939,16 +939,22 @@ The obtained reduced dynamics is shown in Figure [[fig:cant_beam_mimo_reduction]
   addpath('examples/piezo_stack/');
 #+end_src
 
-** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
+#+begin_src matlab :exports none
+  open('piezo_stack');
+#+end_src
+
+** Half Actuator / Half Sensor
+*** Introduction                                                    :ignore:
+*** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
 We first extract the stiffness and mass matrices.
 #+begin_src matlab
-  K = extractMatrix('piezo_stack_K.txt');
-  M = extractMatrix('piezo_stack_M.txt');
+  K = extractMatrix('piezo_stack_half_K.txt');
+  M = extractMatrix('piezo_stack_half_M.txt');
 #+end_src
 
 Then, we extract the coordinates of the interface nodes.
 #+begin_src matlab
-  [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes('piezo_stack.txt');
+  [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes('piezo_stack_half.txt');
 #+end_src
 
 #+begin_src matlab :exports results :results value table replace :tangle no
@@ -1010,17 +1016,13 @@ Then, we extract the coordinates of the interface nodes.
 
 Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
 
-** Identification of the Dynamics
+*** Identification of the Dynamics
 The flexible element is imported using the =Reduced Order Flexible Solid= simscape block.
 
 To model the actuator, an =Internal Force= block is added between the first and second nodes.
 To model the sensors, a =Relative Motion Sensor= block is added between the second and the third nodes.
 
 Two masses are fixed at the ends of the piezo-electric stack actuator.
-
-#+begin_src matlab :exports none
-  open('piezo_stack');
-#+end_src
 
 We first set the mass to be zero.
 #+begin_src matlab
@@ -1038,7 +1040,7 @@ The dynamics is identified from the applied force to the measured relative displ
   io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
   io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
 
-  G = linearize(mdl, io);
+  Gh = linearize(mdl, io);
 #+end_src
 
 Then, we add 1Kg of mass:
@@ -1048,7 +1050,7 @@ Then, we add 1Kg of mass:
 
 And the dynamics is identified.
 
-The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
+The two identified dynamics are compared in Figure [[fig:piezo_stack_half_frf]].
 
 #+begin_src matlab :exports none
   %% Name of the Simulink File
@@ -1059,7 +1061,7 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
   io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
   io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
 
-  Gm = linearize(mdl, io);
+  Ghm = linearize(mdl, io);
 #+end_src
 
 #+begin_src matlab :exports none
@@ -1069,8 +1071,8 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
 
   ax1 = subplot(2,1,1);
   hold on;
-  plot(freqs, abs(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
-  plot(freqs, abs(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  plot(freqs, abs(squeeze(freqresp(Gh, freqs, 'Hz'))), 'k-');
+  plot(freqs, abs(squeeze(freqresp(Ghm, freqs, 'Hz'))), 'k--');
   hold off;
   set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
   ylabel('Amplitude'); set(gca, 'XTickLabel',[]);
@@ -1078,8 +1080,10 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
 
   ax2 = subplot(2,1,2);
   hold on;
-  plot(freqs, 180/pi*angle(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
-  plot(freqs, 180/pi*angle(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Gh, freqs, 'Hz'))), 'k-', ...
+       'DisplayName', '$m = 0kg$');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Ghm, freqs, 'Hz'))), 'k--', ...
+       'DisplayName', '$m = 1kg$');
   set(gca, 'XScale', 'log'); set(gca, 'YScale', 'lin');
   yticks(-180:90:180);
   ylim([-180 180]);
@@ -1087,46 +1091,30 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
   hold off;
   linkaxes([ax1,ax2],'x');
   xlim([freqs(1), freqs(end)]);
+  legend('location', 'southwest');
 #+end_src
 
 #+begin_src matlab :tangle no :exports results :results file replace
-  exportFig('figs/piezo_stack_frf.pdf', 'width', 'full', 'height', 'full');
+  exportFig('figs/piezo_stack_half_frf.pdf', 'width', 'full', 'height', 'full');
 #+end_src
 
-#+name: fig:piezo_stack_frf
+#+name: fig:piezo_stack_half_frf
 #+caption: Identify transfer function from a vertical force applied at the middle point of the cantilever beam to its vertical displacement
 #+RESULTS:
-[[file:figs/piezo_stack_frf.png]]
+[[file:figs/piezo_stack_half_frf.png]]
 
-* Piezoelectric Stack with Sensor at the end
-:PROPERTIES:
-:header-args:matlab+: :tangle examples/piezo_stack_sensor/piezo_stack_sensor.m
-:header-args:matlab+: :comments none :mkdirp yes
-:END:
-** Matlab Init                                             :noexport:ignore:
-#+begin_src matlab :tangle no :exports none :results silent :noweb yes :var current_dir=(file-name-directory buffer-file-name)
-  <<matlab-dir>>
-#+end_src
-
-#+begin_src matlab :exports none :results silent :noweb yes
-  <<matlab-init>>
-#+end_src
-
-#+begin_src matlab
-  addpath('./src/');
-  addpath('examples/piezo_stack_sensor/');
-#+end_src
-
-** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
+** Mostly Actuator / Barely Sensor
+*** Introduction                                                    :ignore:
+*** Import Mass Matrix, Stiffness Matrix, and Interface Nodes Coordinates
 We first extract the stiffness and mass matrices.
 #+begin_src matlab
-  K = extractMatrix('piezo_stack_sensor_K.txt');
-  M = extractMatrix('piezo_stack_sensor_M.txt');
+  K = extractMatrix('piezo_stack_actuator_K.txt');
+  M = extractMatrix('piezo_stack_actuator_M.txt');
 #+end_src
 
 Then, we extract the coordinates of the interface nodes.
 #+begin_src matlab
-  [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes('piezo_stack_sensor.txt');
+  [int_xyz, int_i, n_xyz, n_i, nodes] = extractNodes('piezo_stack_actuator.txt');
 #+end_src
 
 #+begin_src matlab :exports results :results value table replace :tangle no
@@ -1187,17 +1175,13 @@ Then, we extract the coordinates of the interface nodes.
 
 Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
 
-** Identification of the Dynamics
+*** Identification of the Dynamics
 The flexible element is imported using the =Reduced Order Flexible Solid= simscape block.
 
 To model the actuator, an =Internal Force= block is added between the first and second nodes.
 To model the sensors, a =Relative Motion Sensor= block is added between the second and the third nodes.
 
 Two masses are fixed at the ends of the piezo-electric stack actuator.
-
-#+begin_src matlab :exports none
-  open('piezo_stack_sensor');
-#+end_src
 
 We first set the mass to be zero.
 #+begin_src matlab
@@ -1215,7 +1199,7 @@ The dynamics is identified from the applied force to the measured relative displ
   io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
   io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
 
-  G = linearize(mdl, io);
+  Ga = linearize(mdl, io);
 #+end_src
 
 Then, we add 1Kg of mass:
@@ -1233,7 +1217,7 @@ And the dynamics is identified.
   io(io_i) = linio([mdl, '/F'], 1, 'openinput');  io_i = io_i + 1;
   io(io_i) = linio([mdl, '/x'], 1, 'openoutput'); io_i = io_i + 1;
 
-  Gm = linearize(mdl, io);
+  Gam = linearize(mdl, io);
 #+end_src
 
 #+begin_src matlab :exports none
@@ -1243,8 +1227,8 @@ And the dynamics is identified.
 
   ax1 = subplot(2,1,1);
   hold on;
-  plot(freqs, abs(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
-  plot(freqs, abs(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  plot(freqs, abs(squeeze(freqresp(Ga, freqs, 'Hz'))), 'k-');
+  plot(freqs, abs(squeeze(freqresp(Gam, freqs, 'Hz'))), 'k--');
   hold off;
   set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
   ylabel('Amplitude'); set(gca, 'XTickLabel',[]);
@@ -1252,8 +1236,10 @@ And the dynamics is identified.
 
   ax2 = subplot(2,1,2);
   hold on;
-  plot(freqs, 180/pi*angle(squeeze(freqresp(G, freqs, 'Hz'))), 'k-');
-  plot(freqs, 180/pi*angle(squeeze(freqresp(Gm, freqs, 'Hz'))), 'k--');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Ga, freqs, 'Hz'))), 'k-', ...
+       'DisplayName', '$m = 0kg$');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Gam, freqs, 'Hz'))), 'k--', ...
+       'DisplayName', '$m = 1kg$');
   set(gca, 'XScale', 'log'); set(gca, 'YScale', 'lin');
   yticks(-180:90:180);
   ylim([-180 180]);
@@ -1261,16 +1247,48 @@ And the dynamics is identified.
   hold off;
   linkaxes([ax1,ax2],'x');
   xlim([freqs(1), freqs(end)]);
+  legend('location', 'southwest');
 #+end_src
 
 #+begin_src matlab :tangle no :exports results :results file replace
-  exportFig('figs/piezo_stack_sensor_frf.pdf', 'width', 'full', 'height', 'full');
+  exportFig('figs/piezo_stack_actuator_frf.pdf', 'width', 'full', 'height', 'full');
 #+end_src
 
-#+name: fig:piezo_stack_sensor_frf
+#+name: fig:piezo_stack_actuator_frf
 #+caption: Identify transfer function from a vertical force applied at the middle point of the cantilever beam to its vertical displacement
 #+RESULTS:
-[[file:figs/piezo_stack_sensor_frf.png]]
+[[file:figs/piezo_stack_actuator_frf.png]]
+
+** Comparison
+#+begin_src matlab :exports none
+  freqs = logspace(3, 6, 1000);
+
+  figure;
+
+  ax1 = subplot(2,1,1);
+  hold on;
+  plot(freqs, abs(squeeze(freqresp(Gh, freqs, 'Hz'))), 'k-');
+  plot(freqs, abs(squeeze(freqresp(Ga, freqs, 'Hz'))), 'k--');
+  hold off;
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+  ylabel('Amplitude'); set(gca, 'XTickLabel',[]);
+  hold off;
+
+  ax2 = subplot(2,1,2);
+  hold on;
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Gh, freqs, 'Hz'))), 'k-', ...
+       'DisplayName', 'Half');
+  plot(freqs, 180/pi*angle(squeeze(freqresp(Ga, freqs, 'Hz'))), 'k--', ...
+       'DisplayName', 'Mostly Actuator');
+  set(gca, 'XScale', 'log'); set(gca, 'YScale', 'lin');
+  yticks(-180:90:180);
+  ylim([-180 180]);
+  xlabel('Frequency [Hz]'); ylabel('Phase [deg]');
+  hold off;
+  linkaxes([ax1,ax2],'x');
+  xlim([freqs(1), freqs(end)]);
+  legend('location', 'southwest');
+#+end_src
 
 * Functions
 <<sec:functions>>
