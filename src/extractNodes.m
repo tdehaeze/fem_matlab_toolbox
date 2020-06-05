@@ -39,14 +39,18 @@ while 1
         while 1
             nextline = fgetl(fid);
 
+            if nextline < 0, break, end
+
             c = sscanf(nextline, ' %f');
 
             if isempty(c), break, end
 
-            n_xyz = [n_xyz; c(2:end)'];
+            n_xyz = [n_xyz; c(2:4)'];
             n_i = [n_i; c(1)];
         end
     end
+
+    if nextline < 0, break, end
 
     % Line just before the list of node DOF
     if contains(nextline, 'NODE DOF')
@@ -69,6 +73,8 @@ while 1
 
         nodes = table(n_num, string(n_dof'), 'VariableNames', {'node_i', 'node_dof'});
     end
+
+    if nextline < 0, break, end
 end
 
 fclose(fid);
