@@ -1090,7 +1090,7 @@ The two identified dynamics are compared in Figure [[fig:piezo_stack_frf]].
 #+end_src
 
 #+begin_src matlab :tangle no :exports results :results file replace
-  exportFig('figs/piezo_stack_frf.pdf', 'width', 'tall', 'height', 'tall');
+  exportFig('figs/piezo_stack_frf.pdf', 'width', 'full', 'height', 'full');
 #+end_src
 
 #+name: fig:piezo_stack_frf
