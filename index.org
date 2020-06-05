@@ -1192,7 +1192,7 @@ The dynamics is identified from the applied force to the measured relative displ
 
 #+begin_src matlab
   %% Name of the Simulink File
-  mdl = 'piezo_stack_sensor';
+  mdl = 'piezo_stack';
 
   %% Input/Output definition
   clear io; io_i = 1;
@@ -1210,7 +1210,7 @@ Then, we add 1Kg of mass:
 And the dynamics is identified.
 #+begin_src matlab :exports none
   %% Name of the Simulink File
-  mdl = 'piezo_stack_sensor';
+  mdl = 'piezo_stack';
 
   %% Input/Output definition
   clear io; io_i = 1;
@@ -1289,6 +1289,15 @@ And the dynamics is identified.
   xlim([freqs(1), freqs(end)]);
   legend('location', 'southwest');
 #+end_src
+
+#+begin_src matlab :tangle no :exports results :results file replace
+exportFig('figs/piezo_stack_comp_half_actu.pdf', 'width', 'full', 'height', 'full');
+#+end_src
+
+#+name: fig:piezo_stack_comp_half_actu
+#+caption: Comparison
+#+RESULTS:
+[[file:figs/piezo_stack_comp_half_actu.png]]
 
 * Functions
 <<sec:functions>>
