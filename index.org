@@ -961,6 +961,18 @@ Then, we extract the coordinates of the interface nodes.
 | Number of Modes           |  186 |
 | Size of M and K matrices  |  204 |
 
+#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
+  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x [m]', 'y [m]', 'z [m]'}, ' %f ');
+#+end_src
+
+#+caption: Coordinates of the interface nodes
+#+RESULTS:
+| Node Number | x [m] | y [m] | z [m] |
+|-------------+-------+-------+-------|
+|      1402.0 |   0.0 |   0.0 |   0.0 |
+|      1403.0 | 0.035 |   0.0 |   0.0 |
+|      1404.0 |  0.07 |   0.0 |   0.0 |
+
 #+begin_src matlab :exports results :results value table replace :tangle no
   data2orgtable(K(1:10, 1:10), {}, {}, ' %.1g ');
 #+end_src
@@ -996,18 +1008,6 @@ Then, we extract the coordinates of the interface nodes.
 |     0 |     0 |  0.004 | -5e-16 | -3e-05 |     0 |     0 |     0 |   0.02 | -1e-15 |
 |     0 |     0 | -5e-16 |  8e-08 |  4e-18 |     0 |     0 |     0 | -1e-15 |  3e-07 |
 
-#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
-  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x [m]', 'y [m]', 'z [m]'}, ' %f ');
-#+end_src
-
-#+caption: Coordinates of the interface nodes
-#+RESULTS:
-| Node Number | x [m] | y [m] | z [m] |
-|-------------+-------+-------+-------|
-|      1402.0 |   0.0 |   0.0 |   0.0 |
-|      1403.0 | 0.035 |   0.0 |   0.0 |
-|      1404.0 |  0.07 |   0.0 |   0.0 |
-
 Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
 
 ** Identification of the Dynamics
@@ -1041,9 +1041,9 @@ The dynamics is identified from the applied force to the measured relative displ
   G = linearize(mdl, io);
 #+end_src
 
-Then, we add 10Kg of mass:
+Then, we add 1Kg of mass:
 #+begin_src matlab
-  m = 10;
+  m = 1;
 #+end_src
 
 And the dynamics is identified.
@@ -1139,6 +1139,18 @@ Then, we extract the coordinates of the interface nodes.
 | Number of Modes           |   30 |
 | Size of M and K matrices  |   48 |
 
+#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
+  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x [m]', 'y [m]', 'z [m]'}, ' %f ');
+#+end_src
+
+#+caption: Coordinates of the interface nodes
+#+RESULTS:
+| Node Number | x [m] | y [m] | z [m] |
+|-------------+-------+-------+-------|
+|         1.0 |   0.0 |   0.0 |   0.0 |
+|         2.0 |  0.06 |   0.0 |   0.0 |
+|         3.0 |  0.07 |   0.0 |   0.0 |
+
 #+begin_src matlab :exports results :results value table replace :tangle no
   data2orgtable(K(1:10, 1:10), {}, {}, ' %.1e ');
 #+end_src
@@ -1173,18 +1185,6 @@ Then, we extract the coordinates of the interface nodes.
 |    0.0 |      0.0 |   0.0064 | -5.2e-15 | -9.8e-05 |      0.0 |    0.0 |      0.0 |     0.02 | -5.9e-15 |
 |    0.0 |      0.0 | -5.2e-15 |  1.4e-07 |  7.2e-17 |      0.0 |    0.0 |      0.0 | -5.9e-15 |    3e-07 |
 
-#+begin_src matlab :exports results :results value table replace :tangle no :post addhdr(*this*)
-  data2orgtable([int_i, int_xyz], {}, {'Node Number', 'x [m]', 'y [m]', 'z [m]'}, ' %.0e ');
-#+end_src
-
-#+caption: Coordinates of the interface nodes
-#+RESULTS:
-| Node Number | x [m] | y [m] | z [m] |
-|-------------+-------+-------+-------|
-|         1.0 |   0.0 |   0.0 |   0.0 |
-|         2.0 |  0.06 |   0.0 |   0.0 |
-|         3.0 |  0.07 |   0.0 |   0.0 |
-
 Using =K=, =M= and =int_xyz=, we can use the =Reduced Order Flexible Solid= simscape block.
 
 ** Identification of the Dynamics
@@ -1218,9 +1218,9 @@ The dynamics is identified from the applied force to the measured relative displ
   G = linearize(mdl, io);
 #+end_src
 
-Then, we add 10Kg of mass:
+Then, we add 1Kg of mass:
 #+begin_src matlab
-  m = 10;
+  m = 1;
 #+end_src
 
 And the dynamics is identified.
@@ -1264,7 +1264,7 @@ And the dynamics is identified.
 #+end_src
 
 #+begin_src matlab :tangle no :exports results :results file replace
-  exportFig('figs/piezo_stack_sensor_frf.pdf', 'width', 'tall', 'height', 'tall');
+  exportFig('figs/piezo_stack_sensor_frf.pdf', 'width', 'full', 'height', 'full');
 #+end_src
 
 #+name: fig:piezo_stack_sensor_frf
