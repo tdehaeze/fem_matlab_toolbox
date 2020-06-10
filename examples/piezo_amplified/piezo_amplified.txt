@@ -1,0 +1,132 @@
+
+ LIST MASTERS ON ALL SELECTED NODES.
+ CURRENT DOF SET= UX   UY   UZ   ROTX ROTY ROTZ
+
+ *** ANSYS - ENGINEERING ANALYSIS SYSTEM  RELEASE 2019 R3          19.5     ***
+ DISTRIBUTED ANSYS Academic Research                           
+
+ 00208316  VERSION=WINDOWS x64   14:38:08  JUN 10, 2020 CP=      1.844
+
+ Unknown                                                                       
+
+
+  NODE DOF
+   76423 UX  
+   76423 UY  
+   76423 UZ  
+   76423 ROTX
+   76423 ROTY
+   76423 ROTZ
+   76429 UX  
+   76429 UY  
+   76429 UZ  
+   76429 ROTX
+   76429 ROTY
+   76429 ROTZ
+   76430 UX  
+   76430 UY  
+   76430 UZ  
+   76430 ROTX
+   76430 ROTY
+   76430 ROTZ
+   76431 UX  
+   76431 UY  
+   76431 UZ  
+   76431 ROTX
+   76431 ROTY
+   76431 ROTZ
+   76432 UX  
+   76432 UY  
+   76432 UZ  
+   76432 ROTX
+   76432 ROTY
+   76432 ROTZ
+   76433 UX  
+   76433 UY  
+   76433 UZ  
+   76433 ROTX
+   76433 ROTY
+   76433 ROTZ
+   76434 UX  
+   76434 UY  
+   76434 UZ  
+   76434 ROTX
+   76434 ROTY
+   76434 ROTZ
+   76435 UX  
+   76435 UY  
+   76435 UZ  
+   76435 ROTX
+   76435 ROTY
+   76435 ROTZ
+   76436 UX  
+   76436 UY  
+
+ *** ANSYS - ENGINEERING ANALYSIS SYSTEM  RELEASE 2019 R3          19.5     ***
+ DISTRIBUTED ANSYS Academic Research                           
+
+ 00208316  VERSION=WINDOWS x64   14:38:08  JUN 10, 2020 CP=      1.844
+
+ Unknown                                                                       
+
+
+  NODE DOF
+   76436 UZ  
+   76436 ROTX
+   76436 ROTY
+   76436 ROTZ
+   76437 UX  
+   76437 UY  
+   76437 UZ  
+   76437 ROTX
+   76437 ROTY
+   76437 ROTZ
+   76438 UX  
+   76438 UY  
+   76438 UZ  
+   76438 ROTX
+   76438 ROTY
+   76438 ROTZ
+   76439 UX  
+   76439 UY  
+   76439 UZ  
+   76439 ROTX
+   76439 ROTY
+   76439 ROTZ
+   76440 UX  
+   76440 UY  
+   76440 UZ  
+   76440 ROTX
+   76440 ROTY
+   76440 ROTZ
+
+
+
+ LIST ALL SELECTED NODES.   DSYS=      0
+
+ *** ANSYS - ENGINEERING ANALYSIS SYSTEM  RELEASE 2019 R3          19.5     ***
+ DISTRIBUTED ANSYS Academic Research                           
+
+ 00208316  VERSION=WINDOWS x64   14:40:51  JUN 10, 2020 CP=      0.469
+
+ Piezo-APA95ML-beamElm--Modal (B5)                                             
+
+
+
+    NODE        X             Y             Z           THXY     THYZ     THZX
+    76423   0.0000       0.30000E-001   0.0000          0.00     0.00     0.00
+    76424   0.0000        0.0000        0.0000          0.00     0.00     0.00
+    76429   0.0000      -0.30000E-001   0.0000          0.00     0.00     0.00
+    76430 -0.35000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76431  0.28000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76432  0.21000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76433  0.14000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76434  0.70000E-002   0.0000        0.0000          0.00     0.00     0.00
+    76435   0.0000        0.0000        0.0000          0.00     0.00     0.00
+    76436 -0.70000E-002   0.0000        0.0000          0.00     0.00     0.00
+    76437 -0.14000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76438 -0.21000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76439 -0.28000E-001   0.0000        0.0000          0.00     0.00     0.00
+    76440  0.35000E-001   0.0000        0.0000          0.00     0.00     0.00
+
+ /OUTPUT FILE= TEMP

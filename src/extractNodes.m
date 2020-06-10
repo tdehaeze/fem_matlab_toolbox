@@ -23,6 +23,9 @@ end
 n_xyz = []; % Contains nodes coordinates
 n_i = []; % Contains nodes indices
 
+n_num = []; % Contains node numbers
+n_dof = {}; % Contains node directions
+
 while 1
     % Read a line
     nextline = fgetl(fid);
@@ -54,8 +57,6 @@ while 1
 
     % Line just before the list of node DOF
     if contains(nextline, 'NODE DOF')
-        n_num = []; % Contains node numbers
-        n_dof = {}; % Contains node directions
 
         while 1
             nextline = fgetl(fid);
@@ -82,4 +83,8 @@ fclose(fid);
 int_i = unique(nodes.('node_i')); % indices of interface nodes
 
 % Extract XYZ coordinates of only the interface nodes
-int_xyz = n_xyz(logical(sum(n_i.*ones(1, length(int_i)) == int_i', 2)), :);
+if length(n_xyz) > 0 && length(n_i) > 0
+    int_xyz = n_xyz(logical(sum(n_i.*ones(1, length(int_i)) == int_i', 2)), :);
+else
+    int_xyz = n_xyz;
+end
