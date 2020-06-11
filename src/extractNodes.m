@@ -56,7 +56,7 @@ while 1
     if nextline < 0, break, end
 
     % Line just before the list of node DOF
-    if contains(nextline, 'NODE DOF')
+    if contains(nextline, 'NODE  LABEL')
 
         while 1
             nextline = fgetl(fid);
